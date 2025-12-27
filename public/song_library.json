@@ -1,0 +1,39 @@
+{
+  "songs": [
+    {
+      "name": "Ode to Joy",
+      "bpm": 65,
+      "melody": ["E3", "E3", "F3", "G3", "G3", "F3", "E3", "D3", "C3", "C3", "D3", "E3", "E3", "D3", "D3"]
+    },
+    {
+      "name": "Twinkle Twinkle",
+      "bpm": 70,
+      "melody": ["C3", "C3", "G3", "G3", "A3", "A3", "G3", null, "F3", "F3", "E3", "E3", "D3", "D3", "C3"]
+    },
+    {
+      "name": "Mary Had a Lamb",
+      "bpm": 75,
+      "melody": ["E3", "D3", "C3", "D3", "E3", "E3", "E3", null, "D3", "D3", "D3", null, "E3", "G3", "G3"]
+    },
+    {
+      "name": "Happy Birthday",
+      "bpm": 65,
+      "melody": ["C3", "C3", "D3", "C3", "F3", "E3", null, "C3", "C3", "D3", "C3", "G3", "F3"]
+    },
+    {
+      "name": "Fur Elise",
+      "bpm": 70,
+      "melody": ["E4", "D#4", "E4", "D#4", "E4", "B3", "D4", "C4", "A3", null, "C3", "E3", "A3", "B3"]
+    },
+    {
+      "name": "Blue Danube",
+      "bpm": 80,
+      "melody": ["C3", "E3", "G3", "G3", "G3", "E3", "C3", "E3", "G3", "G3", "G3", "F3", "D3", "A3", "A3"]
+    },
+    {
+      "name": "Frere Jacques",
+      "bpm": 75,
+      "melody": ["C3", "D3", "E3", "C3", "C3", "D3", "E3", "C3", "E3", "F3", "G3", null, "E3", "F3", "G3"]
+    }
+  ]
+}

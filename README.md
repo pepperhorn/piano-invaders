@@ -219,5 +219,5 @@ Music: Classic public domain melodies
 ---
 
 **Version**: 1.0
-**License**: Not specified
+**License**: GPLv3
 **Last Updated**: 2025
