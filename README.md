@@ -2,6 +2,13 @@
 
 A retro-styled rhythm game that combines Space Invaders gameplay with piano-based music mechanics. Shoot falling musical notes by pressing the correct piano keys at the right time!
 
+## Intent
+A quick project to see if we can build a simple game to reinforce or introduce someone to the piano keyboard.  Goal to keep the game inside a React element so it can be easily embedded, while modularizing components for maintainability and flexibility.
+
+## TODO
+- Larger song library in the JSON format
+
+
 ## Overview
 
 Piano Invaders is a single-file web game featuring:
