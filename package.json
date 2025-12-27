@@ -1,0 +1,24 @@
+{
+  "name": "piano-invaders",
+  "version": "1.0.0",
+  "description": "A retro-styled rhythm game that combines Space Invaders gameplay with piano-based music mechanics. Shoot falling musical notes by pressing the correct piano keys at the right time!",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:lib": "vite build --mode library"
+  },
+  "keywords": ["game", "piano", "music", "react", "rhythm"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^7.3.0"
+  }
+}

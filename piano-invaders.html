@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Piano Invaders</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: #000;
+            color: #0f0;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 15px;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #score, #bpm {
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #0f0;
+        }
+
+        #songTitle {
+            font-size: 12px;
+            color: #ff0;
+            text-shadow: 0 0 10px #ff0;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UFO Styling */
+        #ufo {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+        }
+
+        .ufo-container {
+            width: 80px;
+            height: 45px;
+            position: relative;
+        }
+
+        .ufo-dome {
+            width: 30px;
+            height: 15px;
+            background: #0f0;
+            border-radius: 50% 50% 0 0;
+            position: absolute;
+            top: 0;
+            left: 25px;
+            box-shadow: 0 0 15px #0f0;
+        }
+
+        .ufo-body {
+            width: 80px;
+            height: 20px;
+            background: linear-gradient(180deg, #0f0 0%, #080 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 12px;
+            box-shadow: 0 0 20px #0f0;
+        }
+
+        .ufo-lights {
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .ufo-light {
+            width: 8px;
+            height: 8px;
+            background: #ff0;
+            border-radius: 50%;
+            animation: blink 0.5s infinite alternate;
+        }
+
+        .ufo-light:nth-child(2) { animation-delay: 0.17s; }
+        .ufo-light:nth-child(3) { animation-delay: 0.34s; }
+
+        @keyframes blink {
+            from { opacity: 1; box-shadow: 0 0 5px #ff0; }
+            to { opacity: 0.3; box-shadow: none; }
+        }
+
+        /* Piano Keyboard - QWERTY stacked style */
+        #keyboard {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: #111;
+            border-top: 3px solid #0f0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .black-row {
+            height: 90px;
+            margin-bottom: 3px;
+        }
+
+        .white-row {
+            height: 95px;
+        }
+
+        .piano-key {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            font-weight: bold;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+
+        .white-key {
+            width: calc((100vw - 40px) / 11);
+            max-width: 60px;
+            height: 100%;
+            background: linear-gradient(180deg, #333 0%, #111 100%);
+            border: 2px solid #0f0;
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .white-key:active,
+        .white-key.active {
+            background: linear-gradient(180deg, #0f0 0%, #080 100%);
+            color: #000;
+            text-shadow: none;
+            box-shadow: 0 0 20px #0f0;
+            transform: scale(0.98);
+        }
+
+        .black-key {
+            width: calc((100vw - 40px) / 14);
+            max-width: 45px;
+            height: 100%;
+            background: linear-gradient(180deg, #0f0 0%, #060 100%);
+            border: 2px solid #0a0;
+            color: #000;
+            font-size: 8px;
+        }
+
+        .black-key:active,
+        .black-key.active {
+            background: linear-gradient(180deg, #ff0 0%, #880 100%);
+            box-shadow: 0 0 15px #ff0;
+            transform: scale(0.98);
+        }
+
+        .black-spacer {
+            width: calc((100vw - 40px) / 14);
+            max-width: 45px;
+            height: 100%;
+            visibility: hidden;
+        }
+
+        /* Tank/Shooter */
+        #tank {
+            position: absolute;
+            bottom: 240px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 20px solid #0f0;
+            z-index: 60;
+            transition: left 0.1s;
+            filter: drop-shadow(0 0 5px #0f0);
+        }
+
+        /* Bases */
+        .base {
+            position: absolute;
+            bottom: 265px;
+            width: 50px;
+            height: 35px;
+            z-index: 40;
+        }
+
+        .base-pixel {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #0f0;
+        }
+
+        /* Start Screen */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+
+        #startScreen h1 {
+            font-size: 20px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #0f0;
+            text-align: center;
+        }
+
+        /* Barrel Scroller */
+        .barrel-container {
+            width: 280px;
+            height: 150px;
+            position: relative;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 3px solid #0f0;
+            border-radius: 10px;
+            background: #000;
+            box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+        }
+
+        .barrel-window {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 40px;
+            transform: translateY(-50%);
+            border-top: 2px solid #0f0;
+            border-bottom: 2px solid #0f0;
+            background: rgba(0, 255, 0, 0.1);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .barrel-scroll {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            transition: transform 0.3s ease-out;
+        }
+
+        .barrel-item {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #0f0;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+
+        .barrel-item.selected {
+            opacity: 1;
+            text-shadow: 0 0 10px #0f0;
+            font-size: 12px;
+        }
+
+        .barrel-controls {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .barrel-btn {
+            width: 40px;
+            height: 40px;
+            background: #000;
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            color: #0f0;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .barrel-btn:active {
+            background: #0f0;
+            color: #000;
+        }
+
+        .start-btn {
+            padding: 15px 30px;
+            font-size: 12px;
+            background: #000;
+            border: 3px solid #0f0;
+            color: #0f0;
+            cursor: pointer;
+            margin: 10px;
+            font-family: 'Press Start 2P', cursive;
+            transition: all 0.2s;
+        }
+
+        .start-btn:active {
+            background: #0f0;
+            color: #000;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Rules Popup */
+        #rulesPopup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 300;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .rules-content {
+            max-width: 350px;
+            margin: 0 auto;
+            background: #111;
+            border: 3px solid #0f0;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .rules-content h2 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #0f0;
+        }
+
+        .rules-content p {
+            font-size: 8px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+
+        .rules-content .highlight {
+            color: #0f0;
+        }
+
+        .close-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background: #0f0;
+            border: none;
+            color: #000;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        /* Game Over */
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 250;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #gameOver h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #f00;
+            text-shadow: 0 0 20px #f00;
+        }
+
+        #gameOver.win h2 {
+            color: #0f0;
+            text-shadow: 0 0 20px #0f0;
+        }
+
+        #finalScore {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="canvas"></canvas>
+        
+        <div id="header">
+            <div class="header-left">
+                <div id="score">SCORE: 0</div>
+                <div id="bpm">BPM: 65</div>
+            </div>
+            <div id="songTitle">Ode to Joy</div>
+        </div>
+
+        <div id="ufo">
+            <div class="ufo-container">
+                <div class="ufo-dome"></div>
+                <div class="ufo-body"></div>
+                <div class="ufo-lights">
+                    <div class="ufo-light"></div>
+                    <div class="ufo-light"></div>
+                    <div class="ufo-light"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tank"></div>
+        <div id="keyboard"></div>
+
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h1>🎹 PIANO INVADERS 👾</h1>
+            
+            <div class="barrel-container">
+                <div class="barrel-window"></div>
+                <div class="barrel-scroll" id="barrelScroll"></div>
+            </div>
+            
+            <div class="barrel-controls">
+                <button class="barrel-btn" id="prevSong">▲</button>
+                <button class="barrel-btn" id="nextSong">▼</button>
+            </div>
+            
+            <div class="btn-row">
+                <button class="start-btn" id="startBtn">START</button>
+                <button class="start-btn" id="randomBtn">RANDOM</button>
+            </div>
+            
+            <button class="start-btn" id="rulesBtn">📜 RULES</button>
+        </div>
+
+        <!-- Rules Popup -->
+        <div id="rulesPopup">
+            <div class="rules-content">
+                <h2>📜 HOW TO PLAY</h2>
+                <p><span class="highlight">▸ OBJECTIVE</span><br>
+                Shoot falling notes by pressing the correct piano keys. Protect your bases!</p>
+                
+                <p><span class="highlight">▸ NOTE COLORS</span><br>
+                <span style="color:#0f0">GREEN</span> = Next note to hit<br>
+                <span style="color:#ff0">YELLOW</span> = Coming soon<br>
+                <span style="color:#f80">ORANGE</span> = Further away<br>
+                <span style="color:#888">GRAY</span> = In queue</p>
+                
+                <p><span class="highlight">▸ SCORING</span><br>
+                +10 points for each correct hit<br>
+                Reach 1000 points to WIN!</p>
+                
+                <p><span class="highlight">▸ CONTROLS</span><br>
+                Click/tap piano keys to shoot<br>
+                Hit the GREEN note first!</p>
+                
+                <button class="close-btn" id="closeRules">GOT IT!</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOver">
+            <h2>GAME OVER</h2>
+            <div id="finalScore">SCORE: 0</div>
+            <button class="start-btn" id="restartBtn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // ============== PIANO KEY DEFINITIONS ==============
+        // Index-based system: each key has a unique index for note dropping
+        const PIANO_KEYS = [
+            { index: 0,  midi: 'B2',  type: 'white', name: 'B' },
+            { index: 1,  midi: 'C3',  type: 'white', name: 'C' },
+            { index: 2,  midi: 'C#3', type: 'black', name: 'C#' },
+            { index: 3,  midi: 'D3',  type: 'white', name: 'D' },
+            { index: 4,  midi: 'D#3', type: 'black', name: 'D#' },
+            { index: 5,  midi: 'E3',  type: 'white', name: 'E' },
+            { index: 6,  midi: 'F3',  type: 'white', name: 'F' },
+            { index: 7,  midi: 'F#3', type: 'black', name: 'F#' },
+            { index: 8,  midi: 'G3',  type: 'white', name: 'G' },
+            { index: 9,  midi: 'G#3', type: 'black', name: 'G#' },
+            { index: 10, midi: 'A3',  type: 'white', name: 'A' },
+            { index: 11, midi: 'A#3', type: 'black', name: 'A#' },
+            { index: 12, midi: 'B3',  type: 'white', name: 'B' },
+            { index: 13, midi: 'C4',  type: 'white', name: 'C' },
+            { index: 14, midi: 'C#4', type: 'black', name: 'C#' },
+            { index: 15, midi: 'D4',  type: 'white', name: 'D' },
+            { index: 16, midi: 'D#4', type: 'black', name: 'D#' },
+            { index: 17, midi: 'E4',  type: 'white', name: 'E' }
+        ];
+
+        const WHITE_KEYS = PIANO_KEYS.filter(k => k.type === 'white');
+        const BLACK_KEYS = PIANO_KEYS.filter(k => k.type === 'black');
+
+        // Map midi note to key data for quick lookup
+        const MIDI_TO_KEY = {};
+        PIANO_KEYS.forEach(k => MIDI_TO_KEY[k.midi.toLowerCase()] = k);
+
+        // ============== SONG LIBRARY ==============
+        // Songs loaded from external JSON file
+        let SONGS = [];
+
+        // ============== GAME STATE ==============
+        let canvas, ctx;
+        let gameRunning = false;
+        let score = 0;
+        let bpm = 65;
+        let currentSongIndex = 0;
+        let notes = [];
+        let bases = [];
+        let melodyIndex = 0;
+        let gameStartTime = 0;
+        let keyElements = {};  // Map midi -> element
+        let keyPositions = {}; // Map midi -> x position
+
+        // ============== INITIALIZATION ==============
+        async function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            
+            // Load songs from external JSON file
+            await loadSongs();
+            
+            buildKeyboard();
+            buildBarrelScroller();
+            initBases();
+            
+            // Event Listeners
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                buildKeyboard();
+                initBases();
+            });
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('randomBtn').addEventListener('click', startRandomGame);
+            document.getElementById('rulesBtn').addEventListener('click', showRules);
+            document.getElementById('closeRules').addEventListener('click', hideRules);
+            document.getElementById('restartBtn').addEventListener('click', restartGame);
+            document.getElementById('prevSong').addEventListener('click', () => scrollSong(-1));
+            document.getElementById('nextSong').addEventListener('click', () => scrollSong(1));
+        }
+
+        async function loadSongs() {
+            try {
+                const response = await fetch('song_library.json');
+                const data = await response.json();
+                SONGS = data.songs;
+                console.log(`Loaded ${SONGS.length} songs from song_library.json`);
+            } catch (error) {
+                console.error('Failed to load songs, using defaults:', error);
+                // Fallback songs if JSON fails to load
+                SONGS = [
+                    {
+                        name: "Ode to Joy",
+                        bpm: 65,
+                        melody: ["E3", "E3", "F3", "G3", "G3", "F3", "E3", "D3", "C3", "C3", "D3", "E3", "E3", "D3", "D3"]
+                    }
+                ];
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // ============== KEYBOARD - QWERTY STACKED STYLE ==============
+        function buildKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+            keyElements = {};
+            keyPositions = {};
+
+            // Black keys row (top) - with spacers for proper alignment
+            const blackRow = document.createElement('div');
+            blackRow.className = 'key-row black-row';
+            
+            // Pattern: spacer, C#, D#, spacer, F#, G#, A#, spacer, C#, D#, spacer
+            // Aligned with white keys: B, C, D, E, F, G, A, B, C, D, E
+            const blackPattern = [
+                { type: 'half-spacer' },  // Half spacer before first black key
+                { midi: 'C#3' },
+                { midi: 'D#3' },
+                { type: 'spacer' },       // Gap for E (no black key after E)
+                { midi: 'F#3' },
+                { midi: 'G#3' },
+                { midi: 'A#3' },
+                { type: 'spacer' },       // Gap for B (no black key after B)
+                { midi: 'C#4' },
+                { midi: 'D#4' },
+                { type: 'half-spacer' }   // Half spacer at end
+            ];
+
+            blackPattern.forEach(item => {
+                if (item.type === 'spacer') {
+                    const spacer = document.createElement('div');
+                    spacer.className = 'black-spacer';
+                    blackRow.appendChild(spacer);
+                } else if (item.type === 'half-spacer') {
+                    const spacer = document.createElement('div');
+                    spacer.className = 'black-spacer';
+                    spacer.style.width = 'calc((100vw - 40px) / 28)';
+                    spacer.style.maxWidth = '22px';
+                    blackRow.appendChild(spacer);
+                } else {
+                    const key = MIDI_TO_KEY[item.midi.toLowerCase()];
+                    const keyEl = createKeyElement(key, 'black-key');
+                    blackRow.appendChild(keyEl);
+                    keyElements[key.midi.toLowerCase()] = keyEl;
+                }
+            });
+
+            // White keys row (bottom)
+            const whiteRow = document.createElement('div');
+            whiteRow.className = 'key-row white-row';
+
+            WHITE_KEYS.forEach(key => {
+                const keyEl = createKeyElement(key, 'white-key');
+                whiteRow.appendChild(keyEl);
+                keyElements[key.midi.toLowerCase()] = keyEl;
+            });
+
+            keyboard.appendChild(blackRow);
+            keyboard.appendChild(whiteRow);
+
+            // Calculate key positions for note dropping after DOM is ready
+            requestAnimationFrame(() => {
+                calculateKeyPositions();
+            });
+        }
+
+        function createKeyElement(key, className) {
+            const keyEl = document.createElement('div');
+            keyEl.className = `piano-key ${className}`;
+            keyEl.dataset.midi = key.midi;
+            keyEl.dataset.index = key.index;
+            keyEl.textContent = key.name;
+
+            keyEl.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handleKeyPress(key.midi);
+                keyEl.classList.add('active');
+            });
+
+            keyEl.addEventListener('pointerup', () => keyEl.classList.remove('active'));
+            keyEl.addEventListener('pointerleave', () => keyEl.classList.remove('active'));
+
+            return keyEl;
+        }
+
+        function calculateKeyPositions() {
+            // Get positions of all keys for note dropping
+            PIANO_KEYS.forEach(key => {
+                const el = keyElements[key.midi.toLowerCase()];
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    keyPositions[key.midi.toLowerCase()] = rect.left + rect.width / 2;
+                }
+            });
+        }
+
+        // ============== BASES ==============
+        function initBases() {
+            const container = document.getElementById('gameContainer');
+            document.querySelectorAll('.base').forEach(b => b.remove());
+            bases = [];
+
+            const basePositions = [0.15, 0.38, 0.62, 0.85];
+            
+            basePositions.forEach((pos, idx) => {
+                const base = {
+                    x: window.innerWidth * pos - 25,
+                    y: window.innerHeight - 265 - 35,
+                    width: 50,
+                    height: 35,
+                    pixels: [],
+                    element: document.createElement('div')
+                };
+                
+                base.element.className = 'base';
+                base.element.style.left = base.x + 'px';
+                
+                const pattern = [
+                    "  ########  ",
+                    " ########## ",
+                    "############",
+                    "############",
+                    "############",
+                    "###  ##  ###",
+                    "##   ##   ##"
+                ];
+                
+                pattern.forEach((row, y) => {
+                    [...row].forEach((char, x) => {
+                        if (char === '#') {
+                            const pixel = document.createElement('div');
+                            pixel.className = 'base-pixel';
+                            pixel.style.left = (x * 4) + 'px';
+                            pixel.style.top = (y * 5) + 'px';
+                            base.element.appendChild(pixel);
+                            base.pixels.push({
+                                element: pixel,
+                                x: base.x + x * 4,
+                                y: base.y + y * 5,
+                                active: true
+                            });
+                        }
+                    });
+                });
+                
+                container.appendChild(base.element);
+                bases.push(base);
+            });
+        }
+
+        // ============== BARREL SCROLLER ==============
+        function buildBarrelScroller() {
+            const scroll = document.getElementById('barrelScroll');
+            scroll.innerHTML = '';
+            
+            const paddingItem = document.createElement('div');
+            paddingItem.className = 'barrel-item';
+            paddingItem.innerHTML = '&nbsp;';
+            scroll.appendChild(paddingItem.cloneNode(true));
+            
+            SONGS.forEach((song, idx) => {
+                const item = document.createElement('div');
+                item.className = 'barrel-item' + (idx === currentSongIndex ? ' selected' : '');
+                item.textContent = song.name;
+                item.addEventListener('click', () => {
+                    currentSongIndex = idx;
+                    updateBarrelPosition();
+                });
+                scroll.appendChild(item);
+            });
+            
+            scroll.appendChild(paddingItem.cloneNode(true));
+            updateBarrelPosition();
+        }
+
+        function updateBarrelPosition() {
+            const scroll = document.getElementById('barrelScroll');
+            const offset = -(currentSongIndex + 1) * 40 + 55;
+            scroll.style.transform = `translateY(${offset}px)`;
+            
+            const items = scroll.querySelectorAll('.barrel-item');
+            items.forEach((item, idx) => {
+                item.classList.toggle('selected', idx === currentSongIndex + 1);
+            });
+        }
+
+        function scrollSong(direction) {
+            currentSongIndex = (currentSongIndex + direction + SONGS.length) % SONGS.length;
+            updateBarrelPosition();
+        }
+
+        // ============== GAME CONTROLS ==============
+        function showRules() {
+            document.getElementById('rulesPopup').style.display = 'block';
+        }
+
+        function hideRules() {
+            document.getElementById('rulesPopup').style.display = 'none';
+        }
+
+        function startGame() {
+            const song = SONGS[currentSongIndex];
+            bpm = song.bpm;
+            document.getElementById('songTitle').textContent = song.name;
+            document.getElementById('bpm').textContent = `BPM: ${bpm}`;
+            document.getElementById('startScreen').style.display = 'none';
+            
+            score = 0;
+            melodyIndex = 0;
+            notes = [];
+            gameStartTime = Date.now();
+            gameRunning = true;
+            
+            // Recalculate key positions
+            calculateKeyPositions();
+            
+            initBases();
+            updateScore();
+            spawnNotes();
+            gameLoop();
+        }
+
+        function startRandomGame() {
+            currentSongIndex = Math.floor(Math.random() * SONGS.length);
+            updateBarrelPosition();
+            startGame();
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        function endGame(won) {
+            gameRunning = false;
+            const gameOver = document.getElementById('gameOver');
+            gameOver.style.display = 'flex';
+            gameOver.classList.toggle('win', won);
+            gameOver.querySelector('h2').textContent = won ? 'YOU WIN!' : 'GAME OVER';
+            document.getElementById('finalScore').textContent = `SCORE: ${score}`;
+        }
+
+        // ============== NOTE CLASS ==============
+        class Note {
+            constructor(midi, x) {
+                this.midi = midi;
+                this.x = x;
+                this.y = 110;
+                this.radius = 22;
+                this.active = true;
+                this.speed = 1.5;
+                
+                // Get display name from key data
+                const keyData = MIDI_TO_KEY[midi.toLowerCase()];
+                this.displayName = keyData ? keyData.name : midi;
+            }
+
+            update() {
+                if (!this.active) return;
+                this.y += this.speed * (bpm / 65);
+            }
+
+            draw(isNext, queuePosition) {
+                if (!this.active) return;
+                
+                let bgColor, textColor;
+                if (isNext) {
+                    bgColor = '#00ff00';
+                    textColor = '#000000';
+                } else if (queuePosition === 1) {
+                    bgColor = '#ffff00';
+                    textColor = '#000000';
+                } else if (queuePosition === 2) {
+                    bgColor = '#ff8800';
+                    textColor = '#000000';
+                } else {
+                    bgColor = '#555555';
+                    textColor = '#ffffff';
+                }
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = bgColor;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.font = 'bold 14px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = textColor;
+                ctx.fillText(this.displayName, this.x, this.y);
+            }
+
+            isInTargetZone() {
+                const targetY = window.innerHeight - 265;
+                return this.y >= targetY - 40 && this.y <= targetY + 20;
+            }
+        }
+
+        // ============== NOTE SPAWNING ==============
+        function spawnNotes() {
+            if (!gameRunning) return;
+            
+            const song = SONGS[currentSongIndex];
+            const noteData = song.melody[melodyIndex];
+            
+            if (noteData !== null) {
+                const midiLower = noteData.toLowerCase();
+                const x = keyPositions[midiLower];
+                
+                if (x !== undefined) {
+                    notes.push(new Note(noteData, x));
+                } else {
+                    console.warn('No position for note:', noteData);
+                }
+            }
+            
+            melodyIndex++;
+            if (melodyIndex >= song.melody.length) {
+                melodyIndex = 0;
+            }
+            
+            const interval = (60000 / bpm);
+            setTimeout(spawnNotes, interval);
+        }
+
+        // ============== KEY PRESS HANDLING ==============
+        function handleKeyPress(midi) {
+            if (!gameRunning) return;
+            
+            const activeNotes = notes.filter(n => n.active);
+            if (activeNotes.length === 0) return;
+            
+            const nextNote = activeNotes[0];
+            
+            if (nextNote.midi.toLowerCase() === midi.toLowerCase() && nextNote.isInTargetZone()) {
+                nextNote.active = false;
+                score += 10;
+                updateScore();
+                
+                if (score >= 1000) {
+                    endGame(true);
+                }
+            }
+            
+            // Move tank
+            const x = keyPositions[midi.toLowerCase()];
+            if (x !== undefined) {
+                document.getElementById('tank').style.left = (x - 15) + 'px';
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `SCORE: ${score}`;
+        }
+
+        // ============== BPM PROGRESSION ==============
+        function updateBPM() {
+            const now = Date.now();
+            const elapsed = now - gameStartTime;
+            
+            if (elapsed > 60000) {
+                const timeSinceFirstMinute = elapsed - 60000;
+                const expectedIncreases = Math.floor(timeSinceFirstMinute / 10000);
+                const actualIncreases = Math.floor((bpm - SONGS[currentSongIndex].bpm) / 2);
+                
+                if (expectedIncreases > actualIncreases) {
+                    bpm += 2;
+                    document.getElementById('bpm').textContent = `BPM: ${bpm}`;
+                }
+            }
+        }
+
+        // ============== GAME LOOP ==============
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            updateBPM();
+            
+            notes.forEach(note => note.update());
+            
+            // Check collisions
+            notes.forEach((note) => {
+                if (!note.active) return;
+                
+                const baseY = window.innerHeight - 265;
+                
+                if (note.y >= baseY - 35 && note.y <= baseY) {
+                    bases.forEach(base => {
+                        const activePixels = base.pixels.filter(p => p.active);
+                        if (activePixels.length > 0) {
+                            if (note.x >= base.x && note.x <= base.x + 50) {
+                                const pixel = activePixels[Math.floor(Math.random() * activePixels.length)];
+                                pixel.active = false;
+                                pixel.element.style.display = 'none';
+                                note.active = false;
+                            }
+                        }
+                    });
+                }
+                
+                if (note.y > canvas.height) {
+                    note.active = false;
+                }
+            });
+            
+            // Check game over
+            const totalPixels = bases.reduce((sum, b) => sum + b.pixels.filter(p => p.active).length, 0);
+            if (totalPixels === 0) {
+                endGame(false);
+                return;
+            }
+            
+            // Draw notes
+            const currentActiveNotes = notes.filter(n => n.active);
+            currentActiveNotes.forEach((note, idx) => {
+                note.draw(idx === 0, idx);
+            });
+            
+            notes = notes.filter(n => n.active || n.y < canvas.height);
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
