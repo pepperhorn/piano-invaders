@@ -28,6 +28,10 @@ const PianoInvaders = ({ songs: customSongs }) => {
   const spawnTimerRef = useRef(null);
   const gameLoopIdRef = useRef(null);
   const songsRef = useRef([]);
+  const lasersRef = useRef([]);
+  const explosionsRef = useRef([]);
+  const ufoXRef = useRef(window.innerWidth / 2);
+  const lastMetronomeRef = useRef(0);
 
   // Load songs from props or default
   useEffect(() => {
@@ -228,7 +232,12 @@ const PianoInvaders = ({ songs: customSongs }) => {
 
     // Draw notes
     const activeNotes = notesRef.current.filter(n => n.active);
-    activeNotes.forEach((note, idx) => {
+
+    // Sort notes by Y position (descending) so the note closest to the target is first
+    // This ensures the lowest note (highest Y) is position 0 = GREEN
+    const sortedNotes = [...activeNotes].sort((a, b) => b.y - a.y);
+
+    sortedNotes.forEach((note, idx) => {
       note.draw(ctx, idx);
     });
 
@@ -246,7 +255,9 @@ const PianoInvaders = ({ songs: customSongs }) => {
     const activeNotes = notesRef.current.filter(n => n.active);
     if (activeNotes.length === 0) return;
 
-    const nextNote = activeNotes[0];
+    // Sort by Y position to get the note closest to the target (highest Y = furthest down)
+    const sortedNotes = [...activeNotes].sort((a, b) => b.y - a.y);
+    const nextNote = sortedNotes[0];
 
     if (nextNote.midi.toLowerCase() === midi.toLowerCase() && nextNote.isInTargetZone(window.innerHeight)) {
       nextNote.active = false;
@@ -262,9 +273,18 @@ const PianoInvaders = ({ songs: customSongs }) => {
     const song = songsRef.current[currentSongIndex];
     if (!song) return;
 
+    // Clear any existing timers
+    if (spawnTimerRef.current) {
+      clearTimeout(spawnTimerRef.current);
+      spawnTimerRef.current = null;
+    }
+    if (gameLoopIdRef.current) {
+      cancelAnimationFrame(gameLoopIdRef.current);
+      gameLoopIdRef.current = null;
+    }
+
     setBpm(song.bpm);
     setScore(0);
-    setGameRunning(true);
     setShowStartScreen(false);
     setShowGameOver(false);
 
@@ -273,9 +293,10 @@ const PianoInvaders = ({ songs: customSongs }) => {
     gameStartTimeRef.current = Date.now();
 
     initBases();
-    spawnNote();
-    gameLoop();
-  }, [currentSongIndex, initBases, spawnNote, gameLoop]);
+
+    // Set game running last - this triggers the useEffect that starts the game loop
+    setGameRunning(true);
+  }, [currentSongIndex, initBases]);
 
   const startRandomGame = useCallback(async () => {
     const randomIndex = Math.floor(Math.random() * songsRef.current.length);
@@ -287,6 +308,27 @@ const PianoInvaders = ({ songs: customSongs }) => {
     setShowGameOver(false);
     setShowStartScreen(true);
     setGameRunning(false);
+  }, []);
+
+  const quitGame = useCallback(() => {
+    // Stop the game and return to start screen
+    setGameRunning(false);
+    setShowGameOver(false);
+    setShowStartScreen(true);
+
+    // Clear timers
+    if (spawnTimerRef.current) {
+      clearTimeout(spawnTimerRef.current);
+      spawnTimerRef.current = null;
+    }
+    if (gameLoopIdRef.current) {
+      cancelAnimationFrame(gameLoopIdRef.current);
+      gameLoopIdRef.current = null;
+    }
+
+    // Reset game state
+    notesRef.current = [];
+    setScore(0);
   }, []);
 
   const handleResize = useCallback(() => {
@@ -314,11 +356,20 @@ const PianoInvaders = ({ songs: customSongs }) => {
     };
   }, [gameRunning, gameLoop]);
 
+  // Start spawning notes when game starts
   useEffect(() => {
+    if (gameRunning) {
+      spawnNote();
+    }
     return () => {
       if (spawnTimerRef.current) {
         clearTimeout(spawnTimerRef.current);
       }
+    };
+  }, [gameRunning, spawnNote]);
+
+  useEffect(() => {
+    return () => {
       audioManagerRef.current.dispose();
     };
   }, []);
@@ -336,6 +387,11 @@ const PianoInvaders = ({ songs: customSongs }) => {
             <div className="bpm">BPM: {bpm}</div>
           </div>
           <div className="song-title">{currentSong?.name || 'Loading...'}</div>
+          {gameRunning && (
+            <button className="quit-btn" onClick={quitGame}>
+              ✕ QUIT
+            </button>
+          )}
         </div>
 
         <div className="ufo">
