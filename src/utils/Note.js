@@ -1,19 +1,29 @@
 import { GAME_CONFIG } from '../constants/gameConfig.js';
 
 export class Note {
-  constructor(midi, x, keyData) {
+  constructor(midi, targetX, keyData, spawnX) {
     this.midi = midi;
-    this.x = x;
+    this.targetX = targetX;
+    this.spawnX = spawnX !== undefined ? spawnX : targetX;
+    this.x = this.spawnX;
     this.y = GAME_CONFIG.NOTE_START_Y;
     this.radius = GAME_CONFIG.NOTE_RADIUS;
     this.active = true;
+    this.hitLand = false;
     this.baseSpeed = GAME_CONFIG.NOTE_BASE_SPEED;
     this.displayName = keyData?.name || midi;
   }
 
-  update(bpmMultiplier) {
+  update(bpmMultiplier, landY) {
     if (!this.active) return;
     this.y += this.baseSpeed * bpmMultiplier;
+
+    // Lerp X from spawn position toward target key position as note falls
+    // Fully arrive at targetX by the time it reaches the target zone
+    const totalFallDistance = landY - GAME_CONFIG.NOTE_START_Y;
+    const fallen = this.y - GAME_CONFIG.NOTE_START_Y;
+    const t = Math.min(1, fallen / (totalFallDistance * 0.7));
+    this.x = this.spawnX + (this.targetX - this.spawnX) * t;
   }
 
   draw(ctx, queuePosition) {
@@ -47,9 +57,10 @@ export class Note {
     return colorMap[Math.min(queuePosition, 3)];
   }
 
-  isInTargetZone(windowHeight) {
-    const targetY = windowHeight - GAME_CONFIG.BASE_BOTTOM_OFFSET;
-    return this.y >= targetY - 40 && this.y <= targetY + 20;
+  isInTargetZone(landY) {
+    const zoneTop = landY - GAME_CONFIG.TARGET_ZONE_TOP;
+    const zoneBottom = landY - GAME_CONFIG.TARGET_ZONE_BOTTOM;
+    return this.y >= zoneTop && this.y <= zoneBottom;
   }
 
   isOffScreen(windowHeight) {

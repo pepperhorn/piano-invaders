@@ -8,18 +8,27 @@ export const GAME_CONFIG = {
   NOTE_BASE_SPEED: 1.5,
 
   // Scoring
-  WIN_SCORE: 1000,
   POINTS_PER_NOTE: 10,
 
   // Timing
-  BPM_INCREASE_DELAY: 60000, // 1 minute
-  BPM_INCREASE_INTERVAL: 10000, // 10 seconds
+  BPM_INCREASE_DELAY: 30000, // 30 seconds
+  BPM_INCREASE_INTERVAL: 60000, // 60 seconds
   BPM_INCREASE_AMOUNT: 2,
 
-  // Layout
-  TANK_BOTTOM_OFFSET: 240,
-  BASE_BOTTOM_OFFSET: 265,
-  KEYBOARD_HEIGHT: 200,
+  // Health
+  MAX_HEALTH: 100,
+  DAMAGE_PER_BOMB: 5,
+
+  // Land strip
+  BOMB_RADIUS: 20,
+
+  // Target zone (where players can hit notes, above the land)
+  TARGET_ZONE_TOP: 150,
+  TARGET_ZONE_BOTTOM: 30,
+
+  // UFO
+  UFO_Y: 60,
+  UFO_SPEED: 1.5,
 
   // Colors
   COLORS: {

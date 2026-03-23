@@ -4,12 +4,12 @@ const RulesPopup = ({ onClose }) => {
   return (
     <div className="rules-popup show">
       <div className="rules-content">
-        <h2>📜 HOW TO PLAY</h2>
+        <h2>// HOW TO PLAY</h2>
 
         <p>
           <span className="highlight">▸ OBJECTIVE</span>
           <br />
-          Shoot falling notes by pressing the correct piano keys. Protect your bases!
+          Notes fall from the UFO above. Press the matching piano key to shoot them down. Missed notes bomb your land and drain HP. Survive as long as you can and rack up the highest score!
         </p>
 
         <p>
@@ -27,9 +27,19 @@ const RulesPopup = ({ onClose }) => {
         <p>
           <span className="highlight">▸ SCORING</span>
           <br />
-          +10 points for each correct hit
+          +10 points per correct hit
           <br />
-          Reach 1000 points to WIN!
+          -5 HP per missed note
+          <br />
+          Game ends when HP reaches 0
+          <br />
+          TOTAL = Score x HP x BPM x Time
+        </p>
+
+        <p>
+          <span className="highlight">▸ DIFFICULTY</span>
+          <br />
+          BPM increases after 30 seconds, then every 60 seconds. Notes fall faster as BPM rises.
         </p>
 
         <p>
@@ -37,7 +47,9 @@ const RulesPopup = ({ onClose }) => {
           <br />
           Click/tap piano keys to shoot
           <br />
-          Hit the GREEN note first!
+          Desktop: use keyboard (A=B, S=C, D=D, F=E, G=F, H=G, J=A, K=B, L=C)
+          <br />
+          Black keys: E=C#, R=D#, Y=F#, U=G#, I=A#, P=C#, [=D#
         </p>
 
         <button className="close-btn" onClick={onClose}>

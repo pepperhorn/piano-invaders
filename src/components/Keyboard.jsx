@@ -1,9 +1,72 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PIANO_KEYS, WHITE_KEYS, BLACK_KEYS } from '../constants/gameConfig.js';
 
+// Ableton-style QWERTY-to-MIDI mapping
+// Bottom row = white keys, top row = sharps/flats
+const QWERTY_MAP = {
+  'a': 'b2',
+  's': 'c3',
+  'e': 'c#3',
+  'd': 'd3',
+  'r': 'd#3',
+  'f': 'e3',
+  'g': 'f3',
+  'y': 'f#3',
+  'h': 'g3',
+  'u': 'g#3',
+  'j': 'a3',
+  'i': 'a#3',
+  'k': 'b3',
+  'l': 'c4',
+  'p': 'c#4',
+  ';': 'd4',
+  '[': 'd#4',
+  "'": 'e4',
+};
+
+// Reverse map: midi -> qwerty label
+const MIDI_TO_QWERTY = {};
+for (const [key, midi] of Object.entries(QWERTY_MAP)) {
+  MIDI_TO_QWERTY[midi] = key.toUpperCase();
+}
+
+const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
   const [activeKeys, setActiveKeys] = useState(new Set());
   const keyRefs = useRef({});
+  const heldKeysRef = useRef(new Set());
+
+  // Computer keyboard input
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.repeat) return;
+      const midi = QWERTY_MAP[e.key.toLowerCase()];
+      if (!midi) return;
+      if (heldKeysRef.current.has(e.key.toLowerCase())) return;
+      heldKeysRef.current.add(e.key.toLowerCase());
+      setActiveKeys(prev => new Set(prev).add(midi));
+      onKeyPress(midi);
+    };
+
+    const handleKeyUp = (e) => {
+      const midi = QWERTY_MAP[e.key.toLowerCase()];
+      if (!midi) return;
+      heldKeysRef.current.delete(e.key.toLowerCase());
+      setActiveKeys(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(midi);
+        return newSet;
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [onKeyPress]);
 
   useEffect(() => {
     // Calculate key positions after render
@@ -59,6 +122,9 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
         onPointerLeave={() => handleKeyUp(midi)}
       >
         {key.name}
+        {!isTouchDevice() && MIDI_TO_QWERTY[midi] && (
+          <span className="qwerty-label">{MIDI_TO_QWERTY[midi]}</span>
+        )}
       </div>
     );
   };
@@ -141,6 +207,9 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
               onPointerLeave={() => handleKeyUp(midi)}
             >
               {key.name}
+              {!isTouchDevice() && MIDI_TO_QWERTY[midi] && (
+                <span className="qwerty-label">{MIDI_TO_QWERTY[midi]}</span>
+              )}
             </div>
           );
         })}

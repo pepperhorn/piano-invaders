@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import headerImg from '../assets/PianoInvaders-Header.webp';
+import logoImg from '../assets/PianoInvaders-Logo-Trans.webp';
+
+const STORAGE_KEY = 'piano-invaders-leaderboard';
 
 const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom, onShowRules }) => {
   const scrollRef = useRef(null);
@@ -12,8 +16,23 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
     lastTime: 0,
     lastY: 0
   });
+  // Refs to avoid stale closures in global event listeners
+  const currentSongIndexRef = useRef(currentSongIndex);
+  const songsLengthRef = useRef(songs.length);
+  const onSongChangeRef = useRef(onSongChange);
+  useEffect(() => { currentSongIndexRef.current = currentSongIndex; }, [currentSongIndex]);
+  useEffect(() => { songsLengthRef.current = songs.length; }, [songs.length]);
+  useEffect(() => { onSongChangeRef.current = onSongChange; }, [onSongChange]);
 
   const [isDragging, setIsDragging] = useState(false);
+
+  const getLeaderboard = () => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch {
+      return [];
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current && !dragStateRef.current.isDragging) {
@@ -89,11 +108,12 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
     // Calculate which song we're closest to
     const itemsScrolled = -deltaY / 40;
     const targetIndex = Math.round(dragStateRef.current.startIndex + itemsScrolled);
-    const boundedIndex = ((targetIndex % songs.length) + songs.length) % songs.length;
+    const len = songsLengthRef.current;
+    const boundedIndex = ((targetIndex % len) + len) % len;
 
     // Update highlighted song during drag
-    if (boundedIndex !== currentSongIndex) {
-      onSongChange(boundedIndex);
+    if (boundedIndex !== currentSongIndexRef.current) {
+      onSongChangeRef.current(boundedIndex);
     }
   };
 
@@ -109,11 +129,12 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
 
     // Calculate final position
     const itemsScrolled = -totalDelta / 40;
+    const len = songsLengthRef.current;
     let targetIndex = Math.round(dragStateRef.current.startIndex + itemsScrolled);
-    targetIndex = ((targetIndex % songs.length) + songs.length) % songs.length;
+    targetIndex = ((targetIndex % len) + len) % len;
 
     // Update to final position
-    onSongChange(targetIndex);
+    onSongChangeRef.current(targetIndex);
 
     // Re-enable transition for snap effect
     if (scrollRef.current) {
@@ -145,11 +166,14 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
       document.removeEventListener('mousemove', handleGlobalMove);
       document.removeEventListener('mouseup', handleGlobalEnd);
     };
-  }, [currentSongIndex, songs.length]);
+  }, []);
 
   return (
     <div className="start-screen">
-      <h1>🎹 PIANO INVADERS 👾</h1>
+      <div className="start-header-logo">
+        <img src={headerImg} alt="Piano Invaders" className="start-header-img start-header-desktop" />
+        <img src={logoImg} alt="Piano Invaders" className="start-header-img start-header-mobile" />
+      </div>
 
       <div
         className="barrel-container"
@@ -186,7 +210,7 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
       </div>
 
       <div className="btn-row">
-        <button className="start-btn" onClick={onStart}>
+        <button className="start-btn" onClick={() => onStart()}>
           START
         </button>
         <button className="start-btn" onClick={onRandom}>
@@ -194,9 +218,20 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
         </button>
       </div>
 
-      <button className="start-btn" onClick={onShowRules}>
-        📜 RULES
+      <button className="start-btn start-btn-sm" onClick={onShowRules}>
+        [?] RULES
       </button>
+
+      <div className="marquee-container">
+        <div className="marquee-text">
+          {getLeaderboard().map((entry, idx) => (
+            <span key={idx} className="marquee-entry">
+              #{idx + 1} {entry.name} {entry.total.toLocaleString()}
+              <span className="marquee-sep">///</span>
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
