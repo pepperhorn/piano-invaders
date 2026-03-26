@@ -1,34 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-const STORAGE_KEY = 'piano-invaders-leaderboard';
-const MAX_ENTRIES = 10;
-
-const DEFAULT_SCORES = [
-  { name: 'MOE', total: 5200, score: 320, bpm: 71, hp: 45, time: 180, song: 'Ode to Joy' },
-  { name: 'CURLY', total: 4100, score: 280, bpm: 69, hp: 30, time: 150, song: 'Twinkle Twinkle' },
-  { name: 'LARRY', total: 3600, score: 250, bpm: 67, hp: 55, time: 120, song: 'Happy Birthday' },
-  { name: 'BUZZ', total: 2900, score: 200, bpm: 73, hp: 20, time: 140, song: 'Fur Elise' },
-  { name: 'WOODY', total: 2400, score: 180, bpm: 68, hp: 40, time: 110, song: 'Blue Danube' },
-  { name: 'DRAKE', total: 1800, score: 150, bpm: 67, hp: 35, time: 90, song: 'Frere Jacques' },
-  { name: 'PEACH', total: 1400, score: 120, bpm: 66, hp: 25, time: 80, song: 'Mary Had a Lamb' },
-  { name: 'TOAD', total: 900, score: 90, bpm: 65, hp: 15, time: 60, song: 'Ode to Joy' },
-  { name: 'YOSHI', total: 500, score: 60, bpm: 65, hp: 10, time: 45, song: 'Twinkle Twinkle' },
-  { name: 'GOOMBA', total: 200, score: 30, bpm: 65, hp: 5, time: 30, song: 'Happy Birthday' },
-];
-
-function loadLeaderboard() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (stored && stored.length > 0) return stored;
-    return [...DEFAULT_SCORES];
-  } catch {
-    return [...DEFAULT_SCORES];
-  }
-}
-
-function saveLeaderboard(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
-}
+import { loadLeaderboard as defaultLoad, saveLeaderboard as defaultSave, MAX_ENTRIES } from '../utils/leaderboard.js';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -36,36 +7,44 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-const GameOver = ({ stats, onRestart }) => {
+const GameOver = ({ stats, show, onRestart, leaderboard: lbProvider }) => {
   const [name, setName] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState(loadLeaderboard);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [newEntryRank, setNewEntryRank] = useState(-1);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    if (inputRef.current) inputRef.current.focus();
-  }, []);
+  const lbLoad = lbProvider?.load || (async () => defaultLoad());
+  const lbSave = lbProvider?.save || (async (e) => defaultSave(e));
 
-  if (!stats) return null;
+  // Reset state when shown with new stats
+  useEffect(() => {
+    if (show && stats) {
+      setName('');
+      setSubmitted(false);
+      setNewEntryRank(-1);
+      lbLoad().then(entries => setLeaderboard(entries));
+      setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 600);
+    }
+  }, [show, stats]);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
     const entry = {
       name: name.trim().toUpperCase().slice(0, 6),
-      total: stats.total,
-      score: stats.score,
-      bpm: stats.bpm,
-      hp: stats.health,
-      time: stats.time,
-      song: stats.song,
+      total: s.total,
+      score: s.score,
+      bpm: s.bpm,
+      hp: s.health,
+      time: s.time,
+      song: s.song,
       date: Date.now(),
     };
     const updated = [...leaderboard, entry].sort((a, b) => b.total - a.total).slice(0, MAX_ENTRIES);
     const rank = updated.findIndex(e => e.date === entry.date);
     setNewEntryRank(rank);
     setLeaderboard(updated);
-    saveLeaderboard(updated);
+    lbSave(updated);
     setSubmitted(true);
   };
 
@@ -75,34 +54,45 @@ const GameOver = ({ stats, onRestart }) => {
     e.stopPropagation();
   };
 
+  if (!stats && !show) return <div className="game-over" />;
+  const s = stats || {};
+
   return (
-    <div className="game-over show">
-      <h2>{stats.wasQuit ? 'MISSION ABORT' : 'GAME OVER'}</h2>
+    <div className={`game-over ${show ? 'show' : ''}`}>
+      <h2 className="game-over-title">{s.wasQuit ? 'MISSION ABORT' : 'GAME OVER'}</h2>
 
       <div className="game-over-stats">
         <div className="stat-row">
           <span className="stat-label">SONG</span>
-          <span className="stat-value stat-song">{stats.song}</span>
+          <span className="stat-value stat-song">{s.song}</span>
+        </div>
+        <div className="stat-row">
+          <span className="stat-label">DIFFICULTY</span>
+          <span className="stat-value stat-difficulty">{(s.difficulty || 'intermediate').toUpperCase()} x{s.diffMultiplier || 2}</span>
         </div>
         <div className="stat-row">
           <span className="stat-label">SCORE</span>
-          <span className="stat-value">{stats.score}</span>
+          <span className="stat-value">{s.score}</span>
         </div>
         <div className="stat-row">
           <span className="stat-label">HP</span>
-          <span className="stat-value">{stats.health}%</span>
+          <span className="stat-value">{s.health}%</span>
         </div>
         <div className="stat-row">
           <span className="stat-label">BPM</span>
-          <span className="stat-value">{stats.bpm}</span>
+          <span className="stat-value">{s.bpm}</span>
+        </div>
+        <div className="stat-row">
+          <span className="stat-label">ACCUR</span>
+          <span className="stat-value">{s.accuracy ?? 100}%</span>
         </div>
         <div className="stat-row">
           <span className="stat-label">TIME</span>
-          <span className="stat-value">{formatTime(stats.time)}</span>
+          <span className="stat-value">{formatTime(s.time)}</span>
         </div>
         <div className="stat-row stat-total">
           <span className="stat-label">TOTAL</span>
-          <span className="stat-value">{stats.total.toLocaleString()}</span>
+          <span className="stat-value">{(s.total || 0).toLocaleString()}</span>
         </div>
       </div>
 
@@ -120,7 +110,7 @@ const GameOver = ({ stats, onRestart }) => {
             placeholder="______"
             autoComplete="off"
           />
-          <button className="start-btn" onClick={handleSubmit}>OK</button>
+          <button className="start-btn start-btn-primary btn-submit-name" onClick={handleSubmit}>OK</button>
         </div>
       ) : (
         <>
@@ -147,7 +137,7 @@ const GameOver = ({ stats, onRestart }) => {
               </div>
             )}
           </div>
-          <button className="start-btn" onClick={onRestart}>PLAY AGAIN</button>
+          <button className="start-btn start-btn-primary btn-play-again" onClick={onRestart}>PLAY AGAIN</button>
         </>
       )}
     </div>

@@ -1,39 +1,1018 @@
 {
   "songs": [
     {
-      "name": "Ode to Joy",
+      "version": 5,
+      "projectName": "Ode to Joy",
       "bpm": 65,
-      "melody": ["E3", "E3", "F3", "G3", "G3", "F3", "E3", "D3", "C3", "C3", "D3", "E3", "E3", "D3", "D3"]
+      "divisor": 1,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "E",
+              "col": 0,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "E",
+              "col": 1,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "F",
+              "col": 2,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "G",
+              "col": 3,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "G",
+              "col": 4,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "F",
+              "col": 5,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "E",
+              "col": 6,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n7",
+              "name": "D",
+              "col": 7,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "C",
+              "col": 8,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "C",
+              "col": 9,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "D",
+              "col": 10,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n11",
+              "name": "E",
+              "col": 11,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "E",
+              "col": 12,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n13",
+              "name": "D",
+              "col": 13,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n14",
+              "name": "D",
+              "col": 14,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "easy",
+      "chords": []
     },
     {
-      "name": "Twinkle Twinkle",
+      "version": 5,
+      "projectName": "Twinkle Twinkle",
       "bpm": 70,
-      "melody": ["C3", "C3", "G3", "G3", "A3", "A3", "G3", null, "F3", "F3", "E3", "E3", "D3", "D3", "C3"]
+      "divisor": 1,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "C",
+              "col": 0,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "C",
+              "col": 1,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "G",
+              "col": 2,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "G",
+              "col": 3,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "A",
+              "col": 4,
+              "row": 9,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "A",
+              "col": 5,
+              "row": 9,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "G",
+              "col": 6,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "F",
+              "col": 8,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "F",
+              "col": 9,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "E",
+              "col": 10,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n11",
+              "name": "E",
+              "col": 11,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "D",
+              "col": 12,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n13",
+              "name": "D",
+              "col": 13,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n14",
+              "name": "C",
+              "col": 14,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "easy",
+      "chords": []
     },
     {
-      "name": "Mary Had a Lamb",
+      "version": 5,
+      "projectName": "Mary Had a Lamb",
       "bpm": 75,
-      "melody": ["E3", "D3", "C3", "D3", "E3", "E3", "E3", null, "D3", "D3", "D3", null, "E3", "G3", "G3"]
+      "divisor": 1,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "E",
+              "col": 0,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "D",
+              "col": 1,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "C",
+              "col": 2,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "D",
+              "col": 3,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "E",
+              "col": 4,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "E",
+              "col": 5,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "E",
+              "col": 6,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "D",
+              "col": 8,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "D",
+              "col": 9,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "D",
+              "col": 10,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "E",
+              "col": 12,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n13",
+              "name": "G",
+              "col": 13,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n14",
+              "name": "G",
+              "col": 14,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "easy",
+      "chords": []
     },
     {
-      "name": "Happy Birthday",
+      "version": 5,
+      "projectName": "Happy Birthday",
       "bpm": 65,
-      "melody": ["C3", "C3", "D3", "C3", "F3", "E3", null, "C3", "C3", "D3", "C3", "G3", "F3"]
+      "divisor": 1,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "C",
+              "col": 0,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "C",
+              "col": 1,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "D",
+              "col": 2,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "C",
+              "col": 3,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "F",
+              "col": 4,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "E",
+              "col": 5,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n7",
+              "name": "C",
+              "col": 7,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "C",
+              "col": 8,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "D",
+              "col": 9,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "C",
+              "col": 10,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n11",
+              "name": "G",
+              "col": 11,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "F",
+              "col": 12,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "easy",
+      "chords": []
     },
     {
-      "name": "Fur Elise",
+      "version": 5,
+      "projectName": "Fur Elise",
       "bpm": 70,
-      "melody": ["E4", "D#4", "E4", "D#4", "E4", "B3", "D4", "C4", "A3", null, "C3", "E3", "A3", "B3"]
+      "divisor": 2,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "E",
+              "col": 0,
+              "row": 4,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "D#/Eb",
+              "col": 1,
+              "row": 3,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "E",
+              "col": 2,
+              "row": 4,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "D#/Eb",
+              "col": 3,
+              "row": 3,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "E",
+              "col": 4,
+              "row": 4,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "B",
+              "col": 5,
+              "row": 11,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "D",
+              "col": 6,
+              "row": 2,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n7",
+              "name": "C",
+              "col": 8,
+              "row": 0,
+              "octave": 4,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "A",
+              "col": 10,
+              "row": 9,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "C",
+              "col": 12,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "E",
+              "col": 13,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n11",
+              "name": "A",
+              "col": 14,
+              "row": 9,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "B",
+              "col": 16,
+              "row": 11,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "advanced",
+      "chords": []
     },
     {
-      "name": "Blue Danube",
-      "bpm": 80,
-      "melody": ["C3", "E3", "G3", "G3", "G3", "E3", "C3", "E3", "G3", "G3", "G3", "F3", "D3", "A3", "A3"]
+      "version": 5,
+      "projectName": "Blue Danube",
+      "bpm": 55,
+      "divisor": 2,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "C",
+              "col": 0,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "E",
+              "col": 2,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "G",
+              "col": 3,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "G",
+              "col": 4,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "G",
+              "col": 6,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "E",
+              "col": 8,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "C",
+              "col": 9,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n7",
+              "name": "E",
+              "col": 10,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "G",
+              "col": 11,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "G",
+              "col": 12,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "F",
+              "col": 14,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n11",
+              "name": "D",
+              "col": 15,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "A",
+              "col": 16,
+              "row": 9,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "intermediate",
+      "chords": []
     },
     {
-      "name": "Frere Jacques",
+      "version": 5,
+      "projectName": "Frere Jacques",
       "bpm": 75,
-      "melody": ["C3", "D3", "E3", "C3", "C3", "D3", "E3", "C3", "E3", "F3", "G3", null, "E3", "F3", "G3"]
+      "divisor": 1,
+      "transposition": 0,
+      "layers": [
+        {
+          "id": "layer-melody",
+          "name": "Melody",
+          "color": "#00ff00",
+          "instrumentCategory": "Keys",
+          "smplrPatch": "Splendid Grand Piano",
+          "volume": 70,
+          "reverb": 20,
+          "notes": [
+            {
+              "id": "n0",
+              "name": "C",
+              "col": 0,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n1",
+              "name": "D",
+              "col": 1,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n2",
+              "name": "E",
+              "col": 2,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n3",
+              "name": "C",
+              "col": 3,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n4",
+              "name": "C",
+              "col": 4,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n5",
+              "name": "D",
+              "col": 5,
+              "row": 2,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n6",
+              "name": "E",
+              "col": 6,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n7",
+              "name": "C",
+              "col": 7,
+              "row": 0,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n8",
+              "name": "E",
+              "col": 8,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n9",
+              "name": "F",
+              "col": 9,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n10",
+              "name": "G",
+              "col": 10,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n12",
+              "name": "E",
+              "col": 12,
+              "row": 4,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n13",
+              "name": "F",
+              "col": 13,
+              "row": 5,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            },
+            {
+              "id": "n14",
+              "name": "G",
+              "col": 14,
+              "row": 7,
+              "octave": 3,
+              "isRoot": false,
+              "sustainCells": 0
+            }
+          ],
+          "lines": [],
+          "smplrLibrary": "SplendidGrandPiano"
+        }
+      ],
+      "difficulty": "intermediate",
+      "chords": []
     }
   ]
 }

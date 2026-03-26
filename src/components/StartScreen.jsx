@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import headerImg from '../assets/PianoInvaders-Header.webp';
 import logoImg from '../assets/PianoInvaders-Logo-Trans.webp';
+import { loadLeaderboard as defaultLoad } from '../utils/leaderboard.js';
+import backgroundImg from '../assets/piano-invaders-background.webp';
 
-const STORAGE_KEY = 'piano-invaders-leaderboard';
-
-const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom, onShowRules }) => {
+const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom, onShowRules, onImportDottl, importStatus, leaderboard: lbProvider, metronomeOn, onToggleMetronome }) => {
+  const fileInputRef = useRef(null);
+  const [leaderboardData, setLeaderboardData] = useState([]);
   const scrollRef = useRef(null);
   const containerRef = useRef(null);
   const dragStateRef = useRef({
@@ -26,13 +28,10 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
 
   const [isDragging, setIsDragging] = useState(false);
 
-  const getLeaderboard = () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      return [];
-    }
-  };
+  useEffect(() => {
+    const load = lbProvider?.load || (async () => defaultLoad());
+    load().then(entries => setLeaderboardData(entries));
+  }, [lbProvider]);
 
   useEffect(() => {
     if (scrollRef.current && !dragStateRef.current.isDragging) {
@@ -169,7 +168,7 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
   }, []);
 
   return (
-    <div className="start-screen">
+    <div className="start-screen" style={{ backgroundImage: `url(${backgroundImg})` }}>
       <div className="start-header-logo">
         <img src={headerImg} alt="Piano Invaders" className="start-header-img start-header-desktop" />
         <img src={logoImg} alt="Piano Invaders" className="start-header-img start-header-mobile" />
@@ -193,7 +192,7 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
               className={`barrel-item ${idx === currentSongIndex ? 'selected' : ''}`}
               onClick={() => handleSongClick(idx)}
             >
-              {song.name}
+              {song.name} <span className={`difficulty-tag diff-${song.difficulty || 'intermediate'}`}>{(song.difficulty || 'INT')[0].toUpperCase()}</span>
             </div>
           ))}
           <div className="barrel-item">&nbsp;</div>
@@ -218,13 +217,46 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
         </button>
       </div>
 
-      <button className="start-btn start-btn-sm" onClick={onShowRules}>
-        [?] RULES
+      <div className="btn-row">
+        <button className="start-btn start-btn-sm btn-rules" onClick={onShowRules}>
+          [?] RULES
+        </button>
+        <button className="start-btn start-btn-sm btn-import" onClick={() => fileInputRef.current?.click()}>
+          [+] IMPORT
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".dottl,.json"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            if (e.target.files[0] && onImportDottl) {
+              onImportDottl(e.target.files[0]);
+              e.target.value = '';
+            }
+          }}
+        />
+      </div>
+      <button
+        className={`start-btn start-btn-sm btn-metronome ${metronomeOn ? 'start-btn-active' : 'btn-metronome-off'}`}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleMetronome();
+        }}
+      >
+        METRONOME
       </button>
+
+      {importStatus && (
+        <div className={`import-status import-status-${importStatus.type}`}>
+          {importStatus.message}
+        </div>
+      )}
 
       <div className="marquee-container">
         <div className="marquee-text">
-          {getLeaderboard().map((entry, idx) => (
+          {leaderboardData.map((entry, idx) => (
             <span key={idx} className="marquee-entry">
               #{idx + 1} {entry.name} {entry.total.toLocaleString()}
               <span className="marquee-sep">///</span>

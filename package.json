@@ -9,12 +9,19 @@
     "preview": "vite preview",
     "build:lib": "vite build --mode library"
   },
-  "keywords": ["game", "piano", "music", "react", "rhythm"],
+  "keywords": [
+    "game",
+    "piano",
+    "music",
+    "react",
+    "rhythm"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "smplr": "^0.20.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {
