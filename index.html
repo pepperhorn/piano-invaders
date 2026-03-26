@@ -14,7 +14,29 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Piano Invaders" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>Piano Invaders</title>
+
+    <!-- SEO -->
+    <title>Piano Invaders — Retro Rhythm Game | Learn Piano Keys</title>
+    <meta name="description" content="A free retro arcade rhythm game that teaches piano keys. Shoot falling musical notes by pressing the correct keys. Features 7 classic songs, QWERTY keyboard support, leaderboard, and metronome. Play in your browser or install as a PWA." />
+    <meta name="keywords" content="piano game, rhythm game, learn piano, music game, retro game, arcade game, space invaders, piano practice, free piano game, browser game" />
+    <meta name="author" content="Pepperhorn" />
+    <link rel="canonical" href="https://piano-invaders.pepperhorn.com" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Piano Invaders — Retro Rhythm Game" />
+    <meta property="og:description" content="Shoot falling musical notes by pressing the correct piano keys. A free retro arcade game with 7 classic songs, metronome, and leaderboard." />
+    <meta property="og:url" content="https://piano-invaders.pepperhorn.com" />
+    <meta property="og:image" content="https://piano-invaders.pepperhorn.com/icon-512x512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:site_name" content="Piano Invaders" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Piano Invaders — Retro Rhythm Game" />
+    <meta name="twitter:description" content="A free retro arcade rhythm game that teaches piano keys. Play in your browser." />
+    <meta name="twitter:image" content="https://piano-invaders.pepperhorn.com/icon-512x512.png" />
     <style>
       body {
         margin: 0;
@@ -31,6 +53,89 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Structured Data (JSON-LD) for SEO/AEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Piano Invaders",
+      "description": "A free retro arcade rhythm game that combines Space Invaders gameplay with piano-based music mechanics. Players shoot falling musical notes by pressing the correct piano keys to score points and protect their land.",
+      "url": "https://piano-invaders.pepperhorn.com",
+      "image": "https://piano-invaders.pepperhorn.com/icon-512x512.png",
+      "genre": ["Rhythm Game", "Music Game", "Arcade Game", "Educational Game"],
+      "gamePlatform": ["Web Browser", "Mobile Browser", "Progressive Web App"],
+      "operatingSystem": "Any",
+      "applicationCategory": "Game",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Pepperhorn",
+        "url": "https://pepperhorn.com"
+      },
+      "accessMode": ["visual", "auditory", "tactile"],
+      "interactivityType": "active",
+      "learningResourceType": "game",
+      "educationalUse": "practice",
+      "teaches": "Piano keyboard layout, note recognition, rhythm and timing",
+      "inLanguage": "en",
+      "isAccessibleForFree": true
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do you play Piano Invaders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Notes fall from a UFO at the top of the screen. Press the matching piano key (click/tap on mobile, or use your computer keyboard with Ableton-style mapping) to shoot the note before it hits the ground. Score points for correct hits. The game ends when your HP reaches 0 from missed notes."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use my computer keyboard to play Piano Invaders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Piano Invaders uses Ableton-style QWERTY mapping: A=B, S=C, D=D, F=E, G=F, H=G, J=A, K=B, L=C for white keys. Black keys use the row above: E=C#, R=D#, Y=F#, U=G#, I=A#, P=C#4, [=D#4."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Piano Invaders free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Piano Invaders is completely free to play in your browser. You can also install it as a PWA on your phone or tablet for an app-like experience with no download required."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I import my own songs into Piano Invaders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Piano Invaders supports the Dottl song format (.dottl). You can import .dottl files from the start screen using the Import button. Songs created in any Dottl ecosystem app are compatible."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What songs are included in Piano Invaders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Piano Invaders includes 7 classic songs: Ode to Joy, Twinkle Twinkle, Mary Had a Lamb, Happy Birthday, Frere Jacques, Blue Danube, and Fur Elise. Difficulties range from Easy to Advanced."
+          }
+        }
+      ]
+    }
+    </script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
