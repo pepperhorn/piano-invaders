@@ -529,6 +529,7 @@
 .barrel-container {
   width: 280px;
   height: 150px;
+  flex-shrink: 0;
   position: relative;
   margin-bottom: 30px;
   overflow: hidden;
