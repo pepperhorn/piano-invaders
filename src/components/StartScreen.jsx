@@ -4,7 +4,7 @@ import logoImg from '../assets/PianoInvaders-Logo-Trans.webp';
 import { loadLeaderboard as defaultLoad } from '../utils/leaderboard.js';
 import backgroundImg from '../assets/piano-invaders-background.webp';
 
-const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom, onShowRules, onImportDottl, importStatus, leaderboard: lbProvider, metronomeOn, onToggleMetronome }) => {
+const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom, onShowRules, onImportDottl, importStatus, leaderboard: lbProvider, metronomeOn, onToggleMetronome, accompOn, onToggleAccomp }) => {
   const fileInputRef = useRef(null);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const scrollRef = useRef(null);
@@ -247,6 +247,19 @@ const StartScreen = ({ songs, currentSongIndex, onSongChange, onStart, onRandom,
       >
         METRONOME
       </button>
+
+      {songs[currentSongIndex]?.accompaniment?.length > 0 && (
+        <button
+          className={`start-btn start-btn-sm btn-accomp ${accompOn ? 'start-btn-active' : 'btn-accomp-off'}`}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleAccomp();
+          }}
+        >
+          ACCOMP
+        </button>
+      )}
 
       {importStatus && (
         <div className={`import-status import-status-${importStatus.type}`}>

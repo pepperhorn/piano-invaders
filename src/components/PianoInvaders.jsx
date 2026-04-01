@@ -11,6 +11,8 @@ import { dottlToSong, isDottlFile } from '../utils/dottl.js';
 import { loadLeaderboard, saveLeaderboard } from '../utils/leaderboard.js';
 import { createPluginRegistry } from '../plugins/PluginRegistry.js';
 import { playCountIn, initMetronome, playMetronomeTick } from '../utils/metronome.js';
+import { AccompanimentManager } from '../utils/AccompanimentManager.js';
+import * as Tone from 'tone';
 import backgroundImg from '../assets/piano-invaders-background.webp';
 import '../styles/PianoInvaders.css';
 
@@ -52,6 +54,14 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
   });
   const [countIn, setCountIn] = useState(null);
   const metronomeOnRef = useRef(metronomeOn);
+  const [accompOn, setAccompOn] = useState(() => {
+    const stored = localStorage.getItem('piano-invaders-accomp');
+    return stored !== null ? stored === 'true' : true;
+  });
+  const accompOnRef = useRef(accompOn);
+  const accompRef = useRef(null);
+  if (!accompRef.current) accompRef.current = new AccompanimentManager();
+  const accompColRef = useRef(0);
 
   const canvasRef = useRef(null);
   const bgImageRef = useRef(null);
@@ -95,6 +105,7 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
   useEffect(() => { healthRef.current = health; }, [health]);
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { layoutRef.current = layout; }, [layout]);
+  useEffect(() => { accompOnRef.current = accompOn; }, [accompOn]);
 
   // Load songs from props or default
   useEffect(() => {
@@ -152,6 +163,7 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
   const endGame = useCallback((wasQuit) => {
     setGameRunning(false);
     setShowGameOver(true);
+    accompRef.current?.dispose();
 
     const elapsed = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
     const finalBpm = bpmRef.current;
@@ -263,9 +275,16 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
       }
     }
 
+    // Play accompaniment notes for this beat
+    if (accompRef.current?.initialized) {
+      accompRef.current.playBeat(accompColRef.current, song.dottlDivisor || 1, bpmRef.current);
+      accompColRef.current += (song.dottlDivisor || 1);
+    }
+
     melodyIndexRef.current++;
     if (melodyIndexRef.current >= song.melody.length) {
       melodyIndexRef.current = 0;
+      accompColRef.current = 0;
     }
 
     // One beat per melody entry (subdivisions are handled within the beat)
@@ -609,6 +628,7 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
     setShowGameOver(false);
 
     melodyIndexRef.current = 0;
+    accompColRef.current = 0;
     spawnBeatRef.current = 0;
     beatTimesRef.current = [];
     lastHitBeatRef.current = -1;
@@ -618,6 +638,13 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
     bombEffectsRef.current = [];
     hitEffectsRef.current = [];
     gameStartTimeRef.current = Date.now();
+
+    // Initialize accompaniment if song has extra layers
+    if (song.accompaniment?.length > 0) {
+      const ctx = Tone.getContext().rawContext;
+      accompRef.current.init(ctx, song.accompaniment);
+      accompRef.current.setMuted(!accompOnRef.current);
+    }
 
     initLandStrip();
 
@@ -697,6 +724,14 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
     setMetronomeOn(next);
     metronomeOnRef.current = next;
     localStorage.setItem('piano-invaders-metronome', String(next));
+  }, []);
+
+  const toggleAccomp = useCallback(() => {
+    const next = !accompOnRef.current;
+    setAccompOn(next);
+    accompOnRef.current = next;
+    localStorage.setItem('piano-invaders-accomp', String(next));
+    accompRef.current?.setMuted(!next);
   }, []);
 
   const startRandomGame = useCallback(async () => {
@@ -860,6 +895,12 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
             className={`sound-toggle-btn ${metronomeOn ? 'active' : ''}`}
             onClick={toggleMetronome}
           >MET</button>
+          {songs[currentSongIndex]?.accompaniment?.length > 0 && (
+            <button
+              className={`sound-toggle-btn btn-accomp ${accompOn ? 'active' : ''}`}
+              onClick={toggleAccomp}
+            >ACC</button>
+          )}
         </div>
 
         <div className="sound-toggle">
@@ -892,6 +933,8 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
             leaderboard={leaderboardProvider}
             metronomeOn={metronomeOn}
             onToggleMetronome={toggleMetronome}
+            accompOn={accompOn}
+            onToggleAccomp={toggleAccomp}
           />
         )}
 

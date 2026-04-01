@@ -115,7 +115,8 @@ export function dottlToSong(dottl) {
     trimTrailingNulls(melody);
     autoTranspose(melody);
     const difficulty = dottl.difficulty ?? dottl.extensions?.['piano-invaders']?.difficulty ?? 'easy';
-    return { name, bpm, melody, divisor: 1, difficulty };
+    const accompaniment = extractAccompaniment(dottl, transposition);
+    return { name, bpm, melody, divisor: 1, difficulty, accompaniment, dottlDivisor: divisor };
   }
 
   // Divisor > 1: group columns into beats, collapse sub-beat columns into arrays
@@ -148,7 +149,38 @@ export function dottlToSong(dottl) {
   autoTranspose(melody);
 
   const difficulty = dottl.difficulty ?? dottl.extensions?.['piano-invaders']?.difficulty ?? 'easy';
-  return { name, bpm, melody, divisor: 1, difficulty };
+  const accompaniment = extractAccompaniment(dottl, transposition);
+  const dottlDivisor = divisor;
+  return { name, bpm, melody, divisor: 1, difficulty, accompaniment, dottlDivisor };
+}
+
+/**
+ * Extract accompaniment layers (all layers beyond the first).
+ * Returns an array of layer objects with a notesByCol Map for scheduling.
+ */
+function extractAccompaniment(dottl, transposition) {
+  if (!dottl.layers || dottl.layers.length < 2) return [];
+
+  return dottl.layers.slice(1).map(layer => {
+    const notesByCol = new Map();
+    for (const note of (layer.notes || [])) {
+      const midi = dottlNoteToMidi(note, transposition);
+      const entry = { midi, sustainCells: note.sustainCells || 0 };
+      if (notesByCol.has(note.col)) {
+        notesByCol.get(note.col).push(entry);
+      } else {
+        notesByCol.set(note.col, [entry]);
+      }
+    }
+    return {
+      instrumentCategory: layer.instrumentCategory || 'Keys',
+      smplrPatch: layer.smplrPatch || null,
+      smplrLibrary: layer.smplrLibrary || null,
+      volume: layer.volume ?? 70,
+      reverb: layer.reverb ?? 20,
+      notesByCol,
+    };
+  });
 }
 
 function trimTrailingNulls(melody) {
