@@ -32,7 +32,7 @@ for (const [key, midi] of Object.entries(QWERTY_MAP)) {
 
 const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
+const Keyboard = ({ onKeyPress, onKeyHover, onPositionsCalculated }) => {
   const [activeKeys, setActiveKeys] = useState(new Set());
   const keyRefs = useRef({});
   const heldKeysRef = useRef(new Set());
@@ -114,6 +114,7 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
         data-midi={key.midi}
         data-index={key.index}
         style={gridColumn ? { gridColumn } : undefined}
+        onPointerEnter={() => onKeyHover?.(midi)}
         onPointerDown={(e) => {
           e.preventDefault();
           handleKeyDown(midi);
@@ -199,6 +200,7 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
               style={{
                 left: `${leftPercent}%`
               }}
+              onPointerEnter={() => onKeyHover?.(midi)}
               onPointerDown={(e) => {
                 e.preventDefault();
                 handleKeyDown(midi);

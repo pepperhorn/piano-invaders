@@ -42,6 +42,7 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
   const [showRules, setShowRules] = useState(false);
   const [keyPositions, setKeyPositions] = useState({});
   const [layout, setLayout] = useState(getLayout);
+  const [tankX, setTankX] = useState(window.innerWidth / 2);
   const [accuracy, setAccuracy] = useState(100);
   const accuracyRef = useRef(100);
   const beatTimesRef = useRef([]); // timestamps of recent beat ticks
@@ -530,8 +531,18 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
     gameLoopIdRef.current = requestAnimationFrame(gameLoop);
   }, [endGame, updateBpm]);
 
+  const handleKeyHover = useCallback((midi) => {
+    if (!gameRunningRef.current) return;
+    const x = keyPositionsRef.current[midi.toLowerCase()];
+    if (x !== undefined) setTankX(x);
+  }, []);
+
   const handleKeyPress = useCallback((midi) => {
     if (!gameRunningRef.current) return;
+
+    // Move tank to pressed key
+    const x = keyPositionsRef.current[midi.toLowerCase()];
+    if (x !== undefined) setTankX(x);
 
     // Play the note sound
     audioManagerRef.current.playNote(midi, '8n');
@@ -886,9 +897,9 @@ const PianoInvaders = ({ songs: customSongs, plugins = [] }) => {
           </div>
         </div>
 
-        <div className="tank" style={{ left: '50%', bottom: `${layout.tankOffset}px` }}></div>
+        <div className="tank" style={{ left: `${tankX}px`, bottom: `${layout.tankOffset}px`, transform: 'translateX(-50%)' }}></div>
 
-        <Keyboard onKeyPress={handleKeyPress} onPositionsCalculated={setKeyPositions} />
+        <Keyboard onKeyPress={handleKeyPress} onKeyHover={handleKeyHover} onPositionsCalculated={setKeyPositions} />
 
         <div className="metronome-toggle">
           <button
