@@ -74,3 +74,12 @@ export const BLACK_KEYS = PIANO_KEYS.filter(k => k.type === 'black');
 // Keyed by lowercase note string (legacy game); use PIANO_KEYS[].midi for numeric lookup
 export const MIDI_TO_KEY: Record<string, PianoKey> = {};
 PIANO_KEYS.forEach(k => { MIDI_TO_KEY[k.note.toLowerCase()] = k; });
+
+/** Ableton-style QWERTY → MIDI: home row = white keys, row above = sharps. */
+export const QWERTY_MAP: Record<string, number> = {
+  a: 47, s: 48, e: 49, d: 50, r: 51, f: 52, g: 53, y: 54, h: 55, u: 56, j: 57, i: 58, k: 59, l: 60, p: 61, ';': 62, '[': 63, "'": 64,
+}
+
+export const MIDI_TO_QWERTY: Record<number, string> = Object.fromEntries(
+  Object.entries(QWERTY_MAP).map(([k, m]) => [m, k.toUpperCase()]),
+)

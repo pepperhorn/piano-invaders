@@ -2,20 +2,5 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript"],
   "categories": { "correctness": "error" },
-  "ignorePatterns": ["dist", "lib", "node_modules", "tmp", "public"],
-  "overrides": [
-    {
-      "files": ["**/*.js", "**/*.jsx"],
-      "rules": {
-        "react/immutability": "off",
-        "react/preserve-manual-memoization": "off",
-        "react/refs": "off",
-        "react/set-state-in-effect": "off",
-        "react/purity": "off",
-        "react-hooks/exhaustive-deps": "off",
-        "no-unused-vars": "off",
-        "no-async-promise-executor": "off"
-      }
-    }
-  ]
+  "ignorePatterns": ["dist", "lib", "node_modules", "tmp", "public"]
 }

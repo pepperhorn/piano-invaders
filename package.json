@@ -28,8 +28,7 @@
     "ivories": "^0.1.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "smplr": "^1.1.0",
-    "tone": "^15.1.22"
+    "smplr": "^1.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
