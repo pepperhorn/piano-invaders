@@ -2,19 +2,20 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { dottlToGameSong, gameSongToDottl, isDottl } from '../../src/song/dottl';
+import { isLegacySong, legacyToGameSong } from '../../src/song/legacy';
 import { SongError } from '../../src/song/errors';
 
 const fx = (n: string) => JSON.parse(fs.readFileSync(path.join(__dirname, '../fixtures', n), 'utf8'));
 
 describe('dottl reader', () => {
-  it('every dottl song in public/song_library.json converts with >=1 target', () => {
+  it('every entry in public/song_library.json converts with >=1 target (dottl or legacy)', () => {
     const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '../../public/song_library.json'), 'utf8'));
-    const dottls = lib.songs.filter(isDottl);
-    expect(dottls.length).toBeGreaterThan(0);
-    for (const d of dottls) {
-      const song = dottlToGameSong(d);
+    expect(lib.songs.length).toBeGreaterThan(0);
+    for (const entry of lib.songs) {
+      expect(isDottl(entry) || isLegacySong(entry)).toBe(true);
+      const song = isDottl(entry) ? dottlToGameSong(entry) : legacyToGameSong(entry);
       expect(song.targets.length).toBeGreaterThanOrEqual(1);
-      expect(song.source).toBe('dottl');
+      expect(song.source).toBe(isDottl(entry) ? 'dottl' : 'legacy');
     }
   });
 
