@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from '../constants/gameConfig.js';
+import { GAME_CONFIG } from '../constants/gameConfig';
 
 export class Note {
   constructor(midi, targetX, keyData, spawnX) {

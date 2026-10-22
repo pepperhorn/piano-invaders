@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { PIANO_KEYS, WHITE_KEYS, BLACK_KEYS } from '../constants/gameConfig.js';
+import { PIANO_KEYS, WHITE_KEYS, BLACK_KEYS } from '../constants/gameConfig';
 
 // Ableton-style QWERTY-to-MIDI mapping
 // Bottom row = white keys, top row = sharps/flats
@@ -73,10 +73,10 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
     const calculatePositions = () => {
       const positions = {};
       PIANO_KEYS.forEach(key => {
-        const el = keyRefs.current[key.midi.toLowerCase()];
+        const el = keyRefs.current[key.note.toLowerCase()];
         if (el) {
           const rect = el.getBoundingClientRect();
-          positions[key.midi.toLowerCase()] = rect.left + rect.width / 2;
+          positions[key.note.toLowerCase()] = rect.left + rect.width / 2;
         }
       });
       onPositionsCalculated(positions);
@@ -103,15 +103,15 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
   };
 
   const renderKey = (key, className, gridColumn) => {
-    const midi = key.midi.toLowerCase();
+    const midi = key.note.toLowerCase();
     const isActive = activeKeys.has(midi);
 
     return (
       <div
-        key={key.midi}
+        key={key.note}
         ref={el => keyRefs.current[midi] = el}
         className={`piano-key ${className} ${isActive ? 'active' : ''}`}
-        data-midi={key.midi}
+        data-midi={key.note}
         data-index={key.index}
         style={gridColumn ? { gridColumn } : undefined}
         onPointerDown={(e) => {
@@ -169,7 +169,7 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
       <div className="keyboard-grid">
         {/* White keys row */}
         {WHITE_KEYS.map(key => {
-          const gridColumn = whiteKeyGridMap[key.midi];
+          const gridColumn = whiteKeyGridMap[key.note];
           return renderKey(key, 'white-key', gridColumn);
         })}
       </div>
@@ -177,8 +177,8 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
       {/* Black keys container - positioned absolutely over white keys */}
       <div className="black-keys-container">
         {BLACK_KEYS.map(key => {
-          const gridSpan = blackKeyGridMap[key.midi];
-          const midi = key.midi.toLowerCase();
+          const gridSpan = blackKeyGridMap[key.note];
+          const midi = key.note.toLowerCase();
           const isActive = activeKeys.has(midi);
           
           if (!gridSpan) return null;
@@ -191,10 +191,10 @@ const Keyboard = ({ onKeyPress, onPositionsCalculated }) => {
           
           return (
             <div
-              key={key.midi}
+              key={key.note}
               ref={el => keyRefs.current[midi] = el}
               className={`piano-key black-key ${isActive ? 'active' : ''}`}
-              data-midi={key.midi}
+              data-midi={key.note}
               data-index={key.index}
               style={{
                 left: `${leftPercent}%`

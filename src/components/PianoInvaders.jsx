@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GAME_CONFIG, PIANO_KEYS, WHITE_KEYS, BLACK_KEYS, MIDI_TO_KEY } from '../constants/gameConfig.js';
+import { GAME_CONFIG, PIANO_KEYS, WHITE_KEYS, BLACK_KEYS, MIDI_TO_KEY } from '../constants/gameConfig';
 import { AudioManager } from '../utils/AudioManager.js';
 import { Note } from '../utils/Note.js';
 import { LandStrip } from '../utils/LandStrip.js';
