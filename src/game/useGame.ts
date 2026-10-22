@@ -225,6 +225,8 @@ export class GameSession {
 
   step(): void {
     if (this.ended) return
+    // skip long gaps (hidden tab: rAF paused, audio clock kept running) so the beat doesn't jump
+    this.o.clock.tick()
     const now = this.o.clock.now()
     const dt = clamp(now - this.last, 0, MAX_FRAME_GAP)
     this.last = now

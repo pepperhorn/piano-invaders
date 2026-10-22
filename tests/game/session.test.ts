@@ -131,3 +131,31 @@ describe('GameSession', () => {
     expect(beatInBar(sg, 13)).toEqual({ idx: 2, bpb: 3 })
   })
 })
+
+describe('GameSession clock gaps', () => {
+  it('a 20 s jump (hidden tab) is skipped: no HP loss, no note burst, no past-time audio', async () => {
+    const { makeClock } = await import('../../src/game/useGame')
+    const ctx = { currentTime: 0, state: 'running' }
+    const clock = makeClock(ctx)
+    const a = audio()
+    const t: Target[] = Array.from({ length: 8 }, (_, i) => ({ id: i, beat: i, midi: 50, durBeats: 1 }))
+    const s = new GameSession({
+      song: song(t), bpm: 60, clock, audio: a, settings: settings({ countIn: false }), keyX,
+      width: 640, height: 600, land: new LandStrip(640, 32, 1), random: () => 0.5,
+    })
+    const frame = () => { ctx.currentTime += 1 / 60; s.step() }
+    for (let i = 0; i < 30; i++) frame()
+    const beatBefore = s.transport.beatAt(clock.now())
+    const notesBefore = s.notes.length
+    vi.mocked(a.metronomeTick).mockClear(); vi.mocked(a.scheduleAccomp).mockClear()
+    ctx.currentTime += 20 // tab hidden for 20 s
+    frame()
+    expect(s.hp).toBe(100)
+    expect(s.ended).toBe(false)
+    expect(s.transport.beatAt(clock.now()) - beatBefore).toBeLessThan(0.1)
+    expect(s.notes.length - notesBefore).toBeLessThanOrEqual(1)
+    const times = [...vi.mocked(a.metronomeTick).mock.calls.map(c => c[0]), ...vi.mocked(a.scheduleAccomp).mock.calls.map(c => c[1])]
+    expect(times.length).toBeLessThanOrEqual(2)
+    for (const w of times) expect(w).toBeGreaterThanOrEqual(ctx.currentTime - 1e-6)
+  })
+})
