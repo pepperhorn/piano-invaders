@@ -1,0 +1,114 @@
+{
+  "version": 7,
+  "projectName": "Stutter Test",
+  "bpm": 100,
+  "divisor": 2,
+  "beatsPerBar": 3,
+  "transposition": 0,
+  "difficulty": "intermediate",
+  "timeSigChanges": [
+    {
+      "id": "ts1",
+      "col": 7,
+      "beatsPerBar": 4
+    }
+  ],
+  "layers": [
+    {
+      "id": "mel",
+      "name": "Melody",
+      "color": "",
+      "instrumentCategory": "Keys",
+      "smplrPatch": "Splendid Grand Piano",
+      "volume": 70,
+      "reverb": 0,
+      "lines": [],
+      "notes": [
+        {
+          "id": "m0",
+          "name": "G",
+          "col": 0,
+          "row": 0,
+          "octave": 4,
+          "isRoot": false,
+          "sustainCells": 0
+        },
+        {
+          "id": "m1",
+          "name": "C",
+          "col": 1,
+          "row": 0,
+          "octave": 4,
+          "isRoot": false,
+          "sustainCells": 0,
+          "stutter": [
+            5,
+            3
+          ]
+        },
+        {
+          "id": "m2",
+          "name": "E",
+          "col": 3,
+          "row": 0,
+          "octave": 4,
+          "isRoot": false,
+          "sustainCells": 0
+        },
+        {
+          "id": "m3",
+          "name": "G",
+          "col": 5,
+          "row": 0,
+          "octave": 4,
+          "isRoot": false,
+          "sustainCells": 1
+        },
+        {
+          "id": "m4",
+          "name": "C",
+          "col": 7,
+          "row": 0,
+          "octave": 4,
+          "isRoot": false,
+          "sustainCells": 0
+        }
+      ]
+    },
+    {
+      "id": "drums",
+      "name": "Drums",
+      "color": "",
+      "instrumentCategory": "Drums",
+      "smplrPatch": "TR-808",
+      "volume": 60,
+      "reverb": 0,
+      "lines": [],
+      "notes": [
+        {
+          "id": "d0",
+          "name": "C",
+          "col": 1,
+          "row": 0,
+          "octave": 2,
+          "isRoot": false,
+          "sustainCells": 0,
+          "stutter": [
+            7,
+            0
+          ]
+        },
+        {
+          "id": "d1",
+          "name": "D",
+          "col": 3,
+          "row": 0,
+          "octave": 2,
+          "isRoot": false,
+          "sustainCells": 0,
+          "velocity": 80
+        }
+      ]
+    }
+  ]
+}

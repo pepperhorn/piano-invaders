@@ -1,104 +1,40 @@
-let highBuffer: AudioBuffer | null = null;
-let lowBuffer: AudioBuffer | null = null;
-let audioCtx: AudioContext | null = null;
+import highMp3 from './high.mp3';
+import lowMp3 from './low.mp3';
+import { synthTone } from './sfx';
 
-function getAudioContext(): AudioContext {
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
-  }
-  return audioCtx;
-}
-
-/** Load an audio file into an AudioBuffer. */
-async function loadSample(url: string): Promise<AudioBuffer> {
-  const ctx = getAudioContext();
-  const response = await fetch(url);
-  const arrayBuffer = await response.arrayBuffer();
-  return ctx.decodeAudioData(arrayBuffer);
-}
-
-/** Ensure both metronome samples are loaded. */
-async function ensureSamples(): Promise<void> {
-  const [h, l] = await Promise.all([
-    highBuffer ? Promise.resolve(highBuffer) : loadSample(new URL('./high.mp3', import.meta.url).href),
-    lowBuffer ? Promise.resolve(lowBuffer) : loadSample(new URL('./low.mp3', import.meta.url).href),
-  ]);
-  highBuffer = h;
-  lowBuffer = l;
-}
-
-/**
- * Play a metronome sample.
- * @param high - true for beat 1 (high.mp3), false for others (low.mp3)
- * @param volume - gain level (0-1)
- */
-function playSample(high: boolean, volume: number) {
-  const ctx = getAudioContext();
-  const buffer = high ? highBuffer : lowBuffer;
-  if (!buffer) return;
-
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-
-  source.connect(gain);
-  gain.connect(ctx.destination);
-  source.start();
-}
-
-/**
- * Play a single metronome tick for the given beat position.
- * Beat 1: high sample, full volume
- * Beat 3: low sample, medium emphasis
- * Beats 2 & 4: low sample, soft
- * @param volumeScale - 0-1 master volume multiplier
- */
-export function playMetronomeTick(beatInBar: number, volumeScale = 1) {
-  if (beatInBar === 0) {
-    playSample(true, 0.8 * volumeScale);
-  } else if (beatInBar === 2) {
-    playSample(false, 0.55 * volumeScale);
-  } else {
-    playSample(false, 0.3 * volumeScale);
+async function decode(ctx: BaseAudioContext, url: string): Promise<AudioBuffer | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await ctx.decodeAudioData(await res.arrayBuffer());
+  } catch {
+    return null;
   }
 }
 
-/**
- * Play a 4-beat count-in using the metronome samples.
- * Calls onBeat(1-4) for each beat.
- * Returns a promise that resolves when the count-in finishes.
- */
-export function playCountIn(
-  bpm: number,
-  onBeat: (beat: number) => void,
-  volumeScale = 1,
-): Promise<void> {
-  return new Promise(async (resolve) => {
-    await ensureSamples();
+/** Click player on the shared context: sampled high/low ticks, synth click if they can't load. */
+export class Metronome {
+  private high: AudioBuffer | null = null;
+  private low: AudioBuffer | null = null;
 
-    const msPerBeat = 60000 / bpm;
-    let beat = 0;
+  constructor(private readonly ctx: BaseAudioContext, private readonly dest: AudioNode) {}
 
-    const tick = () => {
-      playMetronomeTick(beat, volumeScale);
-      onBeat(beat + 1); // 1-indexed
-      beat++;
+  async load(): Promise<void> {
+    [this.high, this.low] = await Promise.all([decode(this.ctx, highMp3), decode(this.ctx, lowMp3)]);
+  }
 
-      if (beat >= 4) {
-        // Wait one more beat so playback starts on the downbeat after the count-in
-        setTimeout(resolve, msPerBeat);
-      } else {
-        setTimeout(tick, msPerBeat);
-      }
-    };
-
-    tick();
-  });
-}
-
-/** Pre-load the metronome samples. Call early so they're ready for count-in. */
-export async function initMetronome() {
-  await ensureSamples();
+  tick(whenSec: number, accent: boolean, volume: number): void {
+    const buffer = accent ? this.high : this.low;
+    if (!buffer) {
+      synthTone(this.ctx, this.dest, { freq: accent ? 1500 : 1000, when: whenSec, dur: 0.04, gain: 0.3 * volume, type: 'square' });
+      return;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(volume, whenSec);
+    src.connect(g);
+    g.connect(this.dest);
+    src.start(whenSec);
+  }
 }

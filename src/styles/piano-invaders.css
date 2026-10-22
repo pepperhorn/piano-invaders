@@ -1,0 +1,760 @@
+/*
+ * Piano Invaders — Phosphor '78 cabinet. Everything is scoped under .piano-invaders inside
+ * @layer piano-invaders so host styles win by default. Theme with --pi-* custom properties
+ * on the root element. Fonts are NOT loaded here: the host (or the standalone app) loads
+ * Press Start 2P and Poppins.
+ */
+@layer piano-invaders {
+  .piano-invaders {
+    --pi-bg: #000;
+    --pi-fg: #f2f2f2;
+    --pi-dim: #888;
+    --pi-line: #444;
+    --pi-red: #ff2d6a;
+    --pi-green: #33ff66;
+    --pi-alert: #ff3040;
+    --pi-yellow: #ffcf26;
+    --pi-font-arcade: 'Press Start 2P', ui-monospace, monospace;
+    --pi-font-body: Poppins, system-ui, sans-serif;
+    --pi-keyboard-height: 160px;
+    --pi-hud-height: 34px;
+    --pi-strip-height: 24px;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: var(--pi-bg);
+    background-size: cover;
+    background-position: center bottom;
+    color: var(--pi-fg);
+    font-family: var(--pi-font-body);
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    isolation: isolate;
+  }
+
+  .piano-invaders *,
+  .piano-invaders *::before,
+  .piano-invaders *::after {
+    box-sizing: border-box;
+  }
+
+  .piano-invaders:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--pi-green);
+  }
+
+  /* ------------------------------------------------------------------ HUD */
+  .piano-invaders .pi-hud {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: var(--pi-hud-height);
+    padding: 0 10px;
+    background: var(--pi-bg);
+    font-family: var(--pi-font-arcade);
+    color: var(--pi-fg);
+    white-space: nowrap;
+  }
+  .piano-invaders .pi-hud-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .piano-invaders .pi-hud-label {
+    font-size: 7px;
+    line-height: 1;
+    color: var(--pi-fg);
+  }
+  .piano-invaders .pi-hud-value {
+    font-size: 10px;
+    line-height: 1;
+  }
+  .piano-invaders .pi-hud-value.is-zero {
+    color: var(--pi-alert);
+  }
+  .piano-invaders .pi-hud-song {
+    flex: 1 1 auto;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+  .piano-invaders .pi-hud-song-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+  }
+  .piano-invaders .pi-hud-segments {
+    display: flex;
+    gap: 1px;
+    height: 9px;
+  }
+  .piano-invaders .pi-hud-segment {
+    width: 5px;
+    height: 9px;
+    border: 1px solid var(--pi-line);
+  }
+  .piano-invaders .pi-hud-segment.is-on {
+    background: var(--pi-fg);
+    border-color: var(--pi-fg);
+  }
+  .piano-invaders .pi-hud-meter {
+    display: block;
+    width: 48px;
+    height: 9px;
+    border: 1px solid var(--pi-line);
+  }
+  .piano-invaders .pi-hud-meter-fill {
+    display: block;
+    height: 100%;
+    background: var(--pi-fg);
+    transition: width 0.2s;
+  }
+  .piano-invaders .pi-hud-meter-fill.is-warn { background: var(--pi-yellow); }
+  .piano-invaders .pi-hud-meter-fill.is-bad { background: var(--pi-alert); }
+  .piano-invaders .pi-btn-quit {
+    margin-left: 4px;
+    padding: 5px 8px;
+    font-size: 8px;
+  }
+
+  /* ------------------------------------------------------------------ stage */
+  .piano-invaders .pi-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: #000;
+  }
+  .piano-invaders .pi-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+
+  .piano-invaders .pi-countin {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .piano-invaders .pi-countin-beat {
+    font-family: var(--pi-font-arcade);
+    font-size: 72px;
+    color: var(--pi-red);
+    text-shadow: 4px 4px 0 #000;
+    animation: pi-countin-pop 0.35s steps(4) both;
+  }
+  .piano-invaders .pi-countin.is-bar2 .pi-countin-beat {
+    color: var(--pi-green);
+  }
+  @keyframes pi-countin-pop {
+    from { transform: scale(1.6); opacity: 0.2; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* ------------------------------------------------------------------ cabinet strip (toggles, BPM) */
+  .piano-invaders .pi-cabinet-strip {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: var(--pi-strip-height);
+    padding: 0 6px;
+    background: #000;
+    border-top: 1px solid var(--pi-fg);
+    font-family: var(--pi-font-arcade);
+  }
+  .piano-invaders .pi-strip-text {
+    font-size: 6px;
+    color: var(--pi-dim);
+  }
+  .piano-invaders .pi-strip-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .piano-invaders .pi-chip-group {
+    display: flex;
+  }
+  .piano-invaders .pi-chip {
+    font-family: var(--pi-font-arcade);
+    font-size: 7px;
+    line-height: 1;
+    padding: 4px 6px;
+    color: var(--pi-dim);
+    background: #000;
+    border: 1px solid var(--pi-line);
+    cursor: pointer;
+  }
+  .piano-invaders .pi-chip.is-on {
+    color: #000;
+    background: var(--pi-green);
+    border-color: var(--pi-green);
+  }
+  .piano-invaders .pi-bpm-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .piano-invaders .pi-bpm-label {
+    font-size: 7px;
+    color: var(--pi-fg);
+  }
+  .piano-invaders .pi-bpm-slider {
+    width: 110px;
+    height: 12px;
+    accent-color: var(--pi-green);
+  }
+
+  /* ------------------------------------------------------------------ keyboard */
+  .piano-invaders .pi-keyboard {
+    position: relative;
+    flex: none;
+    height: var(--pi-keyboard-height);
+    padding: 0 0 4px;
+    background: #000;
+    touch-action: none;
+  }
+  .piano-invaders .pi-keyboard-whites {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    height: 100%;
+  }
+  .piano-invaders .pi-key {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    cursor: pointer;
+    font-family: var(--pi-font-arcade);
+    line-height: 1;
+  }
+  .piano-invaders .pi-key-white {
+    height: 100%;
+    padding-bottom: 8px;
+    background: #e6e6e6;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    color: #000;
+  }
+  .piano-invaders .pi-key-white.is-active {
+    background: var(--pi-key-lit, var(--pi-green));
+    color: #fff;
+  }
+  .piano-invaders .pi-keyboard-blacks {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 60%;
+    pointer-events: none;
+  }
+  .piano-invaders .pi-key-black {
+    position: absolute;
+    top: 0;
+    width: 5.6%;
+    height: 100%;
+    transform: translateX(-50%);
+    padding-bottom: 6px;
+    background: #000;
+    border: 1px solid var(--pi-fg);
+    border-top: none;
+    color: var(--pi-fg);
+    pointer-events: auto;
+  }
+  .piano-invaders .pi-key-black.is-active {
+    background: var(--pi-key-lit, var(--pi-green));
+    color: #fff;
+  }
+  .piano-invaders .pi-key-name {
+    font-size: 8px;
+  }
+  .piano-invaders .pi-key-black .pi-key-name {
+    font-size: 6px;
+  }
+  .piano-invaders .pi-key-qwerty {
+    font-family: var(--pi-font-body);
+    font-weight: 600;
+    font-size: 10px;
+    opacity: 0.55;
+  }
+
+  /* ------------------------------------------------------------------ overlays (start, game over, rules, error) */
+  .piano-invaders .pi-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.94);
+    color: var(--pi-fg);
+  }
+  .piano-invaders .pi-band {
+    flex: none;
+    width: 100%;
+    height: 8px;
+  }
+  .piano-invaders .pi-band-top { background: var(--pi-red); }
+  .piano-invaders .pi-band-bottom { background: var(--pi-green); margin-top: auto; }
+
+  .piano-invaders .pi-heading {
+    margin: 0;
+    font-family: var(--pi-font-arcade);
+    font-weight: 400;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--pi-fg);
+  }
+
+  .piano-invaders .pi-btn {
+    font-family: var(--pi-font-arcade);
+    font-size: 12px;
+    line-height: 1;
+    padding: 12px 18px;
+    color: var(--pi-fg);
+    background: #000;
+    border: 2px solid var(--pi-fg);
+    cursor: pointer;
+  }
+  .piano-invaders .pi-btn:hover:not(:disabled),
+  .piano-invaders .pi-btn:focus-visible {
+    color: #000;
+    background: var(--pi-fg);
+    outline: none;
+  }
+  .piano-invaders .pi-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .piano-invaders .pi-btn-primary {
+    color: #000;
+    background: var(--pi-green);
+    border-color: var(--pi-green);
+  }
+  .piano-invaders .pi-btn-primary:hover:not(:disabled),
+  .piano-invaders .pi-btn-primary:focus-visible {
+    background: var(--pi-fg);
+    border-color: var(--pi-fg);
+  }
+  .piano-invaders .pi-btn-sm {
+    font-size: 9px;
+    padding: 8px 10px;
+  }
+  .piano-invaders .pi-btn-toggle {
+    color: var(--pi-dim);
+    border-color: var(--pi-line);
+  }
+  .piano-invaders .pi-btn-toggle.is-on {
+    color: var(--pi-green);
+    border-color: var(--pi-green);
+  }
+  .piano-invaders .pi-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* start */
+  .piano-invaders .pi-start-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 560px;
+    padding: 18px 16px 52px;
+  }
+  .piano-invaders .pi-start-title {
+    font-size: 26px;
+    letter-spacing: 2px;
+  }
+  .piano-invaders .pi-start-logo {
+    display: block;
+    width: min(320px, 70%);
+    height: auto;
+    margin: 0 auto;
+  }
+  .piano-invaders .pi-start-single {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+  .piano-invaders .pi-start-single-title {
+    font-family: var(--pi-font-arcade);
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .piano-invaders .pi-start-single-meta {
+    display: flex;
+    gap: 12px;
+    font-family: var(--pi-font-body);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: var(--pi-dim);
+  }
+  .piano-invaders .pi-start-meta-diff.pi-diff-easy { color: var(--pi-green); }
+  .piano-invaders .pi-start-meta-diff.pi-diff-intermediate { color: var(--pi-yellow); }
+  .piano-invaders .pi-start-meta-diff.pi-diff-advanced { color: var(--pi-red); }
+
+  .piano-invaders .pi-start-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .piano-invaders .pi-barrel {
+    position: relative;
+    flex: none;
+    width: min(380px, 100%);
+    overflow: hidden;
+    border: 2px solid var(--pi-fg);
+    cursor: grab;
+    touch-action: none;
+    -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+    mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  }
+  .piano-invaders .pi-barrel.is-dragging { cursor: grabbing; }
+  .piano-invaders .pi-barrel-window {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 40px;
+    transform: translateY(-50%);
+    border-top: 2px solid var(--pi-green);
+    border-bottom: 2px solid var(--pi-green);
+    pointer-events: none;
+  }
+  .piano-invaders .pi-barrel-scroll {
+    position: relative;
+    will-change: transform;
+  }
+  .piano-invaders .pi-barrel-item {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 40px;
+    padding: 0 12px;
+    font-family: var(--pi-font-arcade);
+    font-size: 11px;
+    color: var(--pi-dim);
+    white-space: nowrap;
+  }
+  .piano-invaders .pi-barrel-item.is-selected {
+    color: var(--pi-fg);
+  }
+  .piano-invaders .pi-barrel-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .piano-invaders .pi-barrel-loading,
+  .piano-invaders .pi-barrel-empty { font-style: normal; opacity: 0.7; }
+  .piano-invaders .pi-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .piano-invaders .pi-filter-pill {
+    font-family: var(--pi-font-arcade);
+    font-size: 8px;
+    padding: 6px 9px;
+    color: var(--pi-dim);
+    background: transparent;
+    border: 2px solid var(--pi-line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .piano-invaders .pi-filter-pill:hover,
+  .piano-invaders .pi-filter-pill:focus-visible { color: var(--pi-fg); border-color: var(--pi-fg); outline: none; }
+  .piano-invaders .pi-filter-pill.is-on { color: #000; background: var(--pi-green); border-color: var(--pi-green); }
+  .piano-invaders .pi-pick-error {
+    font-family: var(--pi-font-arcade);
+    font-size: 9px;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--pi-alert);
+  }
+  .piano-invaders .pi-barrel-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .piano-invaders .pi-barrel-bpm {
+    min-width: 80px;
+    text-align: center;
+    font-family: var(--pi-font-body);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--pi-dim);
+  }
+  .piano-invaders .pi-diff-tag {
+    display: inline-block;
+    padding: 3px 4px;
+    font-size: 7px;
+    color: #000;
+    background: var(--pi-green);
+  }
+  .piano-invaders .pi-diff-tag.pi-diff-intermediate { background: var(--pi-yellow); }
+  .piano-invaders .pi-diff-tag.pi-diff-advanced { background: var(--pi-red); }
+
+  .piano-invaders .pi-import-status {
+    font-family: var(--pi-font-arcade);
+    font-size: 9px;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .piano-invaders .pi-import-status.is-success { color: var(--pi-green); }
+  .piano-invaders .pi-import-status.is-error { color: var(--pi-alert); }
+  .piano-invaders .pi-import-status.is-loading { color: var(--pi-dim); }
+
+  .piano-invaders .pi-marquee {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+    overflow: hidden;
+    padding: 8px 0;
+    background: #000;
+    border-top: 1px solid var(--pi-line);
+    font-family: var(--pi-font-arcade);
+    font-size: 9px;
+    white-space: nowrap;
+  }
+  .piano-invaders .pi-marquee-text {
+    display: inline-block;
+    padding-left: 100%;
+    animation: pi-marquee 40s linear infinite;
+  }
+  .piano-invaders .pi-marquee-entry { margin-right: 14px; }
+  .piano-invaders .pi-marquee-sep { margin-left: 14px; color: var(--pi-red); }
+  @keyframes pi-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+  .piano-invaders .pi-start-band-bottom {
+    position: absolute;
+    bottom: 0;
+  }
+
+  /* game over */
+  .piano-invaders .pi-gameover-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 460px;
+    padding: 20px 16px;
+  }
+  .piano-invaders .pi-gameover-title {
+    font-size: 24px;
+    color: var(--pi-alert);
+  }
+  .piano-invaders .pi-gameover-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+  .piano-invaders .pi-stat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: var(--pi-font-arcade);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .piano-invaders .pi-stat-label { color: var(--pi-dim); }
+  .piano-invaders .pi-stat-value {
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .piano-invaders .pi-stat-total {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--pi-fg);
+    font-size: 13px;
+    color: var(--pi-green);
+  }
+  .piano-invaders .pi-stat-total .pi-stat-label { color: var(--pi-green); }
+  .piano-invaders .pi-name-entry {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .piano-invaders .pi-name-prompt {
+    flex-basis: 100%;
+    text-align: center;
+    font-family: var(--pi-font-arcade);
+    font-size: 10px;
+  }
+  .piano-invaders .pi-name-input {
+    width: 9ch;
+    padding: 10px 8px;
+    font-family: var(--pi-font-arcade);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--pi-green);
+    background: #000;
+    border: 2px solid var(--pi-green);
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .piano-invaders .pi-leaderboard {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: var(--pi-font-arcade);
+    font-size: 9px;
+  }
+  .piano-invaders .pi-leaderboard-title {
+    margin-bottom: 6px;
+    text-align: center;
+    color: var(--pi-red);
+  }
+  .piano-invaders .pi-leaderboard-row {
+    display: grid;
+    grid-template-columns: 3ch 1fr 7ch 10ch;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .piano-invaders .pi-leaderboard-head { color: var(--pi-dim); }
+  .piano-invaders .pi-leaderboard-row.is-new { color: var(--pi-green); }
+  .piano-invaders .pi-lb-combo,
+  .piano-invaders .pi-lb-score { text-align: right; }
+
+  /* rules / error panels */
+  .piano-invaders .pi-rules {
+    z-index: 20;
+  }
+  .piano-invaders .pi-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 560px;
+    padding: 0 18px 20px;
+  }
+  .piano-invaders .pi-rules-panel .pi-band { margin: 0 -18px; width: auto; }
+  .piano-invaders .pi-rules-title {
+    margin-top: 12px;
+    font-size: 16px;
+  }
+  .piano-invaders .pi-rules-subhead {
+    margin: 0 0 4px;
+    font-family: var(--pi-font-arcade);
+    font-weight: 400;
+    font-size: 10px;
+    color: var(--pi-green);
+  }
+  .piano-invaders .pi-rules-text {
+    margin: 0 0 6px;
+    font-family: var(--pi-font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    color: #d8d8d8;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .piano-invaders .pi-rules-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .piano-invaders .pi-rules-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-family: var(--pi-font-body);
+    font-weight: 600;
+    font-size: 11px;
+    color: #fff;
+    -webkit-text-stroke: 3px rgba(0, 0, 0, 0.35);
+    paint-order: stroke;
+  }
+  .piano-invaders .pi-btn-close { align-self: center; }
+
+  .piano-invaders .pi-error {
+    justify-content: flex-start;
+  }
+  .piano-invaders .pi-error-panel {
+    align-items: center;
+    margin: auto 0;
+    text-align: center;
+  }
+  .piano-invaders .pi-error-title {
+    font-size: 14px;
+    color: var(--pi-alert);
+  }
+  .piano-invaders .pi-error-detail {
+    margin: 0;
+    font-family: var(--pi-font-body);
+    font-size: 14px;
+    color: var(--pi-dim);
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  /* ------------------------------------------------------------------ compact layouts */
+  .piano-invaders.is-mobile .pi-hud { gap: 8px; padding: 0 6px; }
+  .piano-invaders.is-mobile .pi-hud-hi,
+  .piano-invaders.is-mobile .pi-strip-text { display: none; }
+  .piano-invaders.is-mobile .pi-hud-segment { width: 3px; }
+  .piano-invaders.is-mobile .pi-hud-meter { width: 32px; }
+  .piano-invaders.is-mobile .pi-key-qwerty { display: none; }
+  .piano-invaders.is-mobile .pi-bpm-slider { width: 80px; }
+  .piano-invaders.is-narrow .pi-hud-song { display: none; }
+  .piano-invaders.is-narrow .pi-hud-bpm { margin-right: auto; }
+  .piano-invaders.is-narrow .pi-hud-segments { gap: 0; }
+  .piano-invaders.is-narrow .pi-hud-segment { width: 3px; border-width: 1px 0 1px 1px; }
+  .piano-invaders.is-narrow .pi-hud-segment:last-child { border-right-width: 1px; }
+  .piano-invaders.is-landscape .pi-start-inner { gap: 8px; padding-top: 8px; }
+  .piano-invaders.is-landscape .pi-start-logo { width: min(200px, 40%); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .piano-invaders .pi-marquee-text,
+    .piano-invaders .pi-countin-beat { animation: none; }
+    .piano-invaders .pi-marquee-text { padding-left: 8px; }
+  }
+}

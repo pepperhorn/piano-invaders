@@ -1,0 +1,117 @@
+{
+  "count": 4,
+  "songs": [
+    {
+      "id": "caprice-no-24-theme",
+      "title": "Caprice No. 24 (theme)",
+      "composer": "Niccol\u00f2 Paganini",
+      "category": "classical",
+      "difficulty": 5,
+      "tags": [
+        "classical",
+        "paganini",
+        "violin",
+        "virtuosic"
+      ],
+      "key": "a minor",
+      "timeSignature": [
+        2,
+        4
+      ],
+      "noteRange": {
+        "low": "E4",
+        "high": "D5"
+      },
+      "noteCount": 85,
+      "copyright": "public-domain",
+      "files": {
+        "song": "songs/caprice-no-24-theme/song.json",
+        "abc": "songs/caprice-no-24-theme/song.abc",
+        "musicxml": "songs/caprice-no-24-theme/song.musicxml"
+      }
+    },
+    {
+      "id": "hot-cross-buns",
+      "title": "Hot Cross Buns",
+      "composer": "Traditional",
+      "category": "first",
+      "difficulty": 1,
+      "tags": [
+        "nursery",
+        "beginner",
+        "3-note"
+      ],
+      "key": "C major",
+      "timeSignature": [
+        4,
+        4
+      ],
+      "noteRange": {
+        "low": "C4",
+        "high": "E4"
+      },
+      "noteCount": 17,
+      "copyright": "public-domain",
+      "files": {
+        "song": "songs/hot-cross-buns/song.json",
+        "abc": "songs/hot-cross-buns/song.abc",
+        "musicxml": "songs/hot-cross-buns/song.musicxml"
+      }
+    },
+    {
+      "id": "scarborough-fair",
+      "title": "Scarborough Fair",
+      "composer": "Traditional (English)",
+      "category": "folk",
+      "difficulty": 3,
+      "tags": [
+        "folk",
+        "ballad",
+        "modal"
+      ],
+      "key": "e minor",
+      "timeSignature": [
+        3,
+        4
+      ],
+      "noteRange": {
+        "low": "E4",
+        "high": "C5"
+      },
+      "noteCount": 21,
+      "copyright": "public-domain",
+      "files": {
+        "song": "songs/scarborough-fair/song.json",
+        "abc": "songs/scarborough-fair/song.abc",
+        "musicxml": "songs/scarborough-fair/song.musicxml"
+      }
+    },
+    {
+      "id": "old-macdonald",
+      "title": "Old MacDonald Had a Farm",
+      "composer": "Traditional",
+      "category": "nursery",
+      "difficulty": 2,
+      "tags": [
+        "nursery",
+        "children"
+      ],
+      "key": "G major",
+      "timeSignature": [
+        4,
+        4
+      ],
+      "noteRange": {
+        "low": "D4",
+        "high": "B4"
+      },
+      "noteCount": 59,
+      "copyright": "public-domain",
+      "files": {
+        "song": "songs/old-macdonald/song.json",
+        "abc": "songs/old-macdonald/song.abc",
+        "musicxml": "songs/old-macdonald/song.musicxml"
+      }
+    }
+  ]
+}

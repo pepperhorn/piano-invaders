@@ -25,3 +25,11 @@ Thumbs.db
 
 # Zone Identifier files (WSL)
 *:Zone.Identifier
+.gstack/
+
+# Test/playwright output
+test-results/
+playwright-report/
+lib/
+tmp/
+*.tsbuildinfo
