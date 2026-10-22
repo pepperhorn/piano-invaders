@@ -3,7 +3,7 @@ let ctx: AudioContext | null = null;
 /** Lazy singleton shared by smplr, sfx and the metronome. Never created at import. */
 export function getAudioContext(): AudioContext {
   if (!ctx) {
-    if (typeof window === 'undefined' && typeof AudioContext === 'undefined') {
+    if (typeof AudioContext === 'undefined' && (typeof window === 'undefined' || !(window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext)) {
       throw new Error('AudioContext is not available in this environment');
     }
     const Ctor: typeof AudioContext =

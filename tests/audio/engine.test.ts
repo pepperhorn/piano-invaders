@@ -15,7 +15,11 @@ vi.mock('smplr', () => {
       made.push(inst);
       return inst;
     });
-  return { SplendidGrandPiano: factory('piano'), Soundfont: factory('soundfont'), DrumMachine: factory('drum') };
+  return {
+    SplendidGrandPiano: factory('piano'), Soundfont: factory('soundfont'), DrumMachine: factory('drum'),
+    getDrumMachineNames: () => ['TR-808', 'LM-2'],
+    getSoundfontNames: () => ['acoustic_grand_piano', 'violin', 'acoustic_bass', 'percussive_organ', 'synth_bass_1'],
+  };
 });
 
 import * as smplr from 'smplr';
@@ -86,11 +90,66 @@ describe('AudioEngine', () => {
     const { AudioEngine } = await import('../../src/audio/AudioEngine');
     const ctx = fakeCtx();
     const e = new AudioEngine(ctx);
-    e.onError = vi.fn();
+    const onError = vi.fn();
+    e.onError = onError;
     await e.load(song(), 'piano');
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ code: 'audio' }));
     const before = (ctx.createOscillator as ReturnType<typeof vi.fn>).mock.calls.length;
     e.playPlayer(60);
     expect((ctx.createOscillator as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(before);
     warn.mockRestore();
+  });
+
+  it('resolves the four song_library layer shapes to the right factory and options', async () => {
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const e = new AudioEngine(fakeCtx());
+    const s = song();
+    s.voices = {
+      drums: { instrument: 'LM-2', volume: 1, percussion: true },
+      drumsNoPatch: { instrument: 'Drums', volume: 1, percussion: true },
+      splendid: { instrument: 'Splendid Grand Piano', volume: 1 },
+      gm: { instrument: 'percussive_organ', volume: 1 },
+      keys: { instrument: 'Keys', volume: 1 },
+    };
+    const onError = vi.fn();
+    e.onError = onError;
+    await e.load(s, 'piano');
+    expect(onError).not.toHaveBeenCalled();
+    const drumOpts = made.filter((m) => m.kind === 'drum').map((m) => (m.opts as { instrument: string }).instrument);
+    expect(drumOpts).toEqual(['LM-2', 'LM-2']);
+    expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(2); // player piano + splendid voice
+    const sf = made.filter((m) => m.kind === 'soundfont').map((m) => (m.opts as { instrument: string }).instrument);
+    expect(sf).toEqual(['percussive_organ', 'acoustic_grand_piano']);
+  });
+
+  it('second load leaves only the new song voices and stops old ones', async () => {
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const e = new AudioEngine(fakeCtx());
+    await e.load(song(), 'piano');
+    const oldSf = made.filter((m) => m.kind === 'soundfont');
+    const s2 = song();
+    s2.voices = { z: { instrument: 'violin', volume: 1 } };
+    await e.load(s2, 'piano');
+    oldSf.forEach((m) => expect(m.stop).toHaveBeenCalled());
+    const ids = [...(e as unknown as { voices: Map<string, unknown> }).voices.keys()];
+    expect(ids).toEqual(['z']);
+  });
+
+  it('missing AudioContext reports audio unavailable once and never throws', async () => {
+    vi.stubGlobal('AudioContext', undefined);
+    vi.stubGlobal('webkitAudioContext', undefined);
+    vi.resetModules();
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const e = new AudioEngine();
+    const onError = vi.fn();
+    e.onError = onError;
+    await expect(e.load(song(), 'piano')).resolves.toBeUndefined();
+    expect(() => { e.playPlayer(60); e.sfx('hit'); e.metronomeTick(0, true, 1); e.scheduleAccomp(song().accompaniment[0], 0, 1); }).not.toThrow();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ code: 'audio', message: 'audio unavailable' }));
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+    vi.unstubAllGlobals();
   });
 });
