@@ -159,7 +159,7 @@ All converters produce this model: MusicXML, MIDI (a free bonus via ivories, whe
 ### Visuals (direction B + C badges)
 
 - **Stage.** Pure black, 1-bit sprites, red cellophane band at the top and green band at the bottom, scanlines and bezel vignette (toggleable). A classic mystery-ship mothership with hatch flash on drop.
-- **Notes.** Classic invader silhouettes (squid / crab / octopus) carrying **C-style glowing note badges**: pitch-class-coloured circles with a shaded highlight and bloom.
+- **Notes.** Classic invader silhouettes (squid / crab / octopus), **coloured per pitch class as in direction A "Marquee"** (not B's 1-bit white), carrying **C-style glowing note badges**: pitch-class-coloured circles with a shaded highlight and bloom. *(Added 2026-10-22 by request.)*
   - Letters use the standard note-text style: white Poppins 600, `rgba(0,0,0,.35)` stroke drawn before the fill, scaled to badge size.
   - Sharps/flats are spelled per key signature where known.
 - **Gunship.**

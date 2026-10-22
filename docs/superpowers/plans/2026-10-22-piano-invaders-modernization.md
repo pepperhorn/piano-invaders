@@ -407,6 +407,7 @@ export type Effect = { kind: 'explosion' | 'confetti' | 'text' | 'crater-flash';
 export function stepEffects(effects: Effect[], dtSec: number): Effect[]
 ```
 
+- **Invader colour:** invaders are drawn in **panel A "Marquee" style**, tinted with `pitchColor(midi)` the way panel A colours its squid / crab / octopus. B's white 1-bit sprites are not used for invaders; the rest of the stage stays B.
 - **Motion:**
   - Mothership and invaders use 4-px stepped motion (B style). The gunship and bolts are drawn at exact sub-pixel positions (exempt).
   - The explosive bolt is an angled, thicker bolt with a larger explosion and extra confetti.
@@ -417,6 +418,7 @@ export function stepEffects(effects: Effect[], dtSec: number): Effect[]
   - `drawFrame runs without throwing for an empty and a busy frame`
   - `drawBadge sets font '600 20px Poppins, sans-serif' at r=22 and strokes before fill` (inspect the `vitest-canvas-mock` `__getEvents()` order)
   - `pitchColor(60) === pitchColor(72)`
+  - `invader sprite fill uses pitchColor(midi)` (a C4 invader draws with `pitchColor(60)`)
   - `LandStrip.bomb removes pixels within radius only`
   - `stepEffects drops finished effects`
 - [ ] **Step 2:** Run. Expected: FAIL.
