@@ -450,9 +450,13 @@
     pointer-events: none;
   }
   .piano-invaders .pi-barrel-scroll {
+    position: relative;
     will-change: transform;
   }
   .piano-invaders .pi-barrel-item {
+    position: absolute;
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -470,6 +474,34 @@
   .piano-invaders .pi-barrel-name {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .piano-invaders .pi-barrel-loading,
+  .piano-invaders .pi-barrel-empty { font-style: normal; opacity: 0.7; }
+  .piano-invaders .pi-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .piano-invaders .pi-filter-pill {
+    font-family: var(--pi-font-arcade);
+    font-size: 8px;
+    padding: 6px 9px;
+    color: var(--pi-dim);
+    background: transparent;
+    border: 2px solid var(--pi-line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .piano-invaders .pi-filter-pill:hover,
+  .piano-invaders .pi-filter-pill:focus-visible { color: var(--pi-fg); border-color: var(--pi-fg); outline: none; }
+  .piano-invaders .pi-filter-pill.is-on { color: #000; background: var(--pi-green); border-color: var(--pi-green); }
+  .piano-invaders .pi-pick-error {
+    font-family: var(--pi-font-arcade);
+    font-size: 9px;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--pi-alert);
   }
   .piano-invaders .pi-barrel-controls {
     display: flex;

@@ -10,6 +10,7 @@ import { createPluginRegistry, type PianoInvadersPlugin } from '../plugins/Plugi
 import { SongError } from '../song/errors'
 import { loadSong } from '../song/load'
 import { toGameSong } from '../song/normalize'
+import { loadOpenSong, loadOpenSongsIndex, type OpenSongEntry } from '../song/opensongs'
 import type { Difficulty, GameSong, ScoreSource } from '../song/types'
 import { legacyToGameSong } from '../song/legacy'
 import {
@@ -20,7 +21,7 @@ import GameOver from './GameOver'
 import Hud from './Hud'
 import Keyboard from './Keyboard'
 import RulesPopup from './RulesPopup'
-import StartScreen, { type ImportStatus, type ToggleKey } from './StartScreen'
+import StartScreen, { type DifficultyFilter, type ImportStatus, type LibraryStatus, type RollerItem, type ToggleKey } from './StartScreen'
 import logoImg from '../assets/PianoInvaders-Logo-Trans.webp'
 import '../styles/piano-invaders.css'
 
@@ -38,6 +39,8 @@ export interface PianoInvadersProps {
   showSongPicker?: boolean
   /** default true in picker mode; accepts .musicxml/.xml/.mxl/.mid/.dottl */
   allowImport?: boolean
+  /** OpenSongs library in the picker roller. Default true in picker mode; ignored in single-song mode. */
+  opensongs?: boolean | { baseUrl?: string }
   leaderboard?: LeaderboardAdapter
   plugins?: PianoInvadersPlugin[]
   onGameEnd?(stats: GameStats): void
@@ -174,6 +177,49 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     return () => { live = false }
   }, [srcKey, srcVal, props.songs, props.title, props.difficulty, registry, report])
 
+  // ---------------------------------------------------------------- OpenSongs library (own effect: runs once per baseUrl)
+  const osEnabled = mode === 'picker' && props.opensongs !== false
+  const osBaseUrl = typeof props.opensongs === 'object' ? props.opensongs.baseUrl : undefined
+  const osKey = osBaseUrl ?? ''
+  const [osResult, setOsResult] = useState<{ key: string; entries: OpenSongEntry[]; failed: boolean } | null>(null)
+  useEffect(() => {
+    if (!osEnabled) return
+    let live = true
+    loadOpenSongsIndex({ baseUrl: osBaseUrl }).then(
+      list => { if (live) setOsResult({ key: osKey, entries: list, failed: false }) },
+      e => { if (live) { report(codeOf(e, 'score-load'), msgOf(e), e); setOsResult({ key: osKey, entries: [], failed: true }) } },
+    )
+    return () => { live = false }
+  }, [osEnabled, osBaseUrl, osKey, report])
+  const osCurrent = osEnabled && osResult?.key === osKey ? osResult : null
+  const entries = useMemo(() => osCurrent?.entries ?? [], [osCurrent])
+  const library: LibraryStatus = !osEnabled ? 'off' : !osCurrent ? 'loading' : osCurrent.failed ? 'error' : 'ready'
+  const osCache = useRef(new Map<string, Promise<GameSong>>())
+  useEffect(() => { osCache.current.clear() }, [osBaseUrl])
+
+  // roller = bundled/imported songs, then OpenSongs entries; `index` addresses this combined list
+  const [filter, setFilter] = useState<DifficultyFilter>('all')
+  const [playingTitle, setPlayingTitle] = useState('')
+  const [pickError, setPickError] = useState<string | null>(null)
+  const all = useMemo(() => [
+    ...songs.map((s, i): RollerItem & { all: number } => ({ all: i, key: `s${i}-${s.id}`, title: s.title, difficulty: s.difficulty, hasAccomp: s.accompaniment.length > 0 })),
+    ...entries.map((e, i): RollerItem & { all: number } => ({ all: songs.length + i, key: `o-${e.id}`, title: e.title, difficulty: e.difficulty, hasAccomp: false })),
+  ], [songs, entries])
+  const visible = useMemo(() => (filter === 'all' ? all : all.filter(r => r.difficulty === filter)), [all, filter])
+  const visIndex = Math.max(0, visible.findIndex(r => r.all === index))
+  const selected = visible[visIndex]
+  const selAll = selected ? selected.all : -1
+  const onRollerIndex = useCallback((vi: number) => {
+    const r = visible[vi]
+    if (r) { setIndex(r.all); setPickError(null) }
+  }, [visible])
+  const onFilter = useCallback((f: DifficultyFilter) => {
+    setFilter(f)
+    setPickError(null)
+    const first = (f === 'all' ? all : all.filter(r => r.difficulty === f))
+    if (!first.some(r => r.all === index) && first[0]) setIndex(first[0].all)
+  }, [all, index])
+
   const song: GameSong | undefined = songs[index]
   const baseBpm = song ? (mode === 'single' && props.bpm ? props.bpm : song.bpm) : 0
 
@@ -298,8 +344,30 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   useEffect(() => () => abort(), [abort])
 
   const startSong = useCallback(async (i: number) => {
-    const s = songs[i]
-    if (!s || busy) return
+    if (busy || i < 0) return
+    let s: GameSong | undefined = songs[i]
+    if (!s && i >= songs.length) {
+      const entry = entries[i - songs.length]
+      if (!entry) return
+      setIndex(i)
+      setBusy('LOADING…')
+      setPickError(null)
+      let pending = osCache.current.get(entry.id)
+      if (!pending) {
+        pending = loadOpenSong(entry)
+        osCache.current.set(entry.id, pending)
+      }
+      try {
+        s = await pending
+      } catch (e) {
+        osCache.current.delete(entry.id)
+        report(codeOf(e, 'score-load'), msgOf(e), e)
+        setPickError(`COULD NOT LOAD "${entry.title.toUpperCase()}"`)
+        setBusy(null)
+        return
+      }
+    }
+    if (!s) return
     setIndex(i)
     setBusy('LOADING…')
     rootRef.current?.focus()
@@ -316,6 +384,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     eng.setPlayerVoice(voice)
     const bpm = mode === 'single' && propsRef.current.bpm ? propsRef.current.bpm : s.bpm
     measure()
+    setPlayingTitle(s.title)
     game.start({ song: s, bpm, audio: eng, audioContext: ctx })
     registry.emit('onGameStart', { song: s.title, bpm, difficulty: s.difficulty })
     setEndStats(null)
@@ -323,7 +392,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     setScreen('playing')
     setBusy(null)
     rootRef.current?.focus()
-  }, [songs, busy, engine, voice, mode, measure, game, registry, report])
+  }, [songs, entries, busy, engine, voice, mode, measure, game, registry, report])
 
   const press = useCallback((midi: number) => {
     setActive(a => new Set(a).add(midi))
@@ -382,6 +451,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
       if (s.targets.length === 0) { setImportStatus({ type: 'error', message: 'NO NOTES FOUND' }); return }
       const added = s
       setSongs(prev => [...prev, added])
+      setFilter('all')
       setIndex(songs.length)
       setImportStatus({ type: 'success', message: `LOADED: ${s.title}` })
     } catch (e) {
@@ -401,13 +471,12 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     'piano-invaders', props.className, theme.className,
     layout.isMobile ? 'is-mobile' : '', layout.isLandscapeMobile ? 'is-landscape' : '', layout.isNarrow ? 'is-narrow' : '', playing ? 'is-playing' : '',
   ].filter(Boolean).join(' ')
-  const ready = pluginsReady && songsLoaded && !!song
   const countIn = playing ? hud.countIn : null
 
   return (
     <div ref={rootRef} className={rootClass} style={rootStyle} tabIndex={0} aria-label="Piano Invaders game">
       <Hud
-        score={hud.score} hi={hi} bpm={playing ? hud.bpm : baseBpm} song={song?.title ?? ''} combo={hud.combo}
+        score={hud.score} hi={hi} bpm={playing ? hud.bpm : baseBpm} song={playing ? playingTitle : (selected?.title ?? '')} combo={hud.combo}
         hp={playing ? hud.hp : 100} accuracy={playing ? hud.accuracy : 100} running={playing} onQuit={game.quit}
       />
       <div className="pi-stage" ref={stageRef}>
@@ -461,14 +530,18 @@ export default function PianoInvaders(props: PianoInvadersProps) {
       {screen === 'start' && !loadError && (
         <StartScreen
           mode={mode}
-          songs={songs}
-          index={index}
-          onIndex={setIndex}
+          songs={mode === 'single' ? all : visible}
+          index={mode === 'single' ? 0 : visIndex}
+          onIndex={onRollerIndex}
+          filter={filter}
+          onFilter={onFilter}
+          library={library}
+          pickError={pickError}
           bpm={baseBpm}
-          ready={ready}
+          ready={pluginsReady && songsLoaded && selAll >= 0}
           busy={busy ?? (songsLoaded ? null : 'LOADING…')}
-          onStart={() => void startSong(index)}
-          onRandom={() => void startSong(Math.floor(Math.random() * songs.length))}
+          onStart={() => void startSong(selAll)}
+          onRandom={() => { if (visible.length) void startSong(visible[Math.floor(Math.random() * visible.length)].all) }}
           onRules={() => setShowRules(true)}
           onImport={allowImport ? f => void onImport(f) : undefined}
           importStatus={importStatus}

@@ -40,6 +40,7 @@ class FakeResizeObserver {
 
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {}))) // no network in tests; OpenSongs index stays pending unless a test overrides
   localStorage.clear()
 })
 afterEach(() => {
@@ -99,5 +100,105 @@ describe('PianoInvaders', () => {
     await waitFor(() => expect(within(container.querySelector('.pi-barrel') as HTMLElement).getByText('Ode To Joy')).toBeTruthy())
     expect(container.querySelector('.pi-barrel')).toBeTruthy()
     await waitFor(() => expect(container.querySelectorAll('.pi-barrel-item.is-song')).toHaveLength(2))
+  })
+
+  describe('OpenSongs roller', () => {
+    const index = JSON.parse(fs.readFileSync(fx('opensongs-index.json'), 'utf8'))
+    const stubIndex = (body: unknown) =>
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })))
+    const titles = (c: HTMLElement) => [...c.querySelectorAll('.pi-barrel-item.is-song .pi-barrel-name')].map(n => n.textContent)
+
+    it('picker shows bundled songs then OpenSongs titles', async () => {
+      stubIndex(index)
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      expect(titles(container)).toEqual([
+        'Tiny Tune', 'Hot Cross Buns', 'Old MacDonald Had a Farm', 'Scarborough Fair', 'Caprice No. 24 (theme)',
+      ])
+    })
+
+    it('shows a loading row while the index loads', async () => {
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(container.querySelector('.pi-barrel-loading')).toBeTruthy())
+      expect(titles(container)).toEqual(['Tiny Tune'])
+    })
+
+    it('difficulty filter narrows the roller', async () => {
+      stubIndex(index)
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      const pill = (n: string) => container.querySelector(`.pi-filter-${n}`) as HTMLElement
+      act(() => pill('advanced').click())
+      expect(titles(container)).toEqual(['Caprice No. 24 (theme)'])
+      expect(pill('advanced').getAttribute('aria-pressed')).toBe('true')
+      expect(pill('all').getAttribute('aria-pressed')).toBe('false')
+      act(() => pill('intermediate').click())
+      expect(titles(container)).toEqual(['Scarborough Fair'])
+      act(() => pill('easy').click())
+      expect(titles(container)).toEqual(['Tiny Tune', 'Hot Cross Buns', 'Old MacDonald Had a Farm'])
+      act(() => pill('all').click())
+      expect(titles(container)).toHaveLength(5)
+    })
+
+    it('opensongs={false} shows bundled only and never fetches', async () => {
+      stubIndex(index)
+      const { container } = render(<PianoInvaders songs={[legacy]} opensongs={false} />)
+      await waitFor(() => expect(titles(container)).toEqual(['Tiny Tune']))
+      expect(fetch).not.toHaveBeenCalled()
+    })
+
+    it('opensongs baseUrl is passed to the index fetch', async () => {
+      stubIndex(index)
+      render(<PianoInvaders songs={[legacy]} opensongs={{ baseUrl: 'https://example.test/os/' }} />)
+      await waitFor(() => expect(fetch).toHaveBeenCalledWith('https://example.test/os/index.json'))
+    })
+
+    it('index failure → onError once, bundled songs still selectable', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('boom', { status: 500 })))
+      const onError = vi.fn()
+      const { container } = render(<PianoInvaders songs={[legacy]} onError={onError} />)
+      await waitFor(() => expect(onError).toHaveBeenCalled())
+      await act(async () => { await new Promise(r => setTimeout(r, 20)) })
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(onError.mock.calls[0][0]).toMatchObject({ code: 'score-load' })
+      expect(titles(container)).toEqual(['Tiny Tune'])
+      await waitFor(() => expect((container.querySelector('.pi-btn-start') as HTMLButtonElement).disabled).toBe(false))
+    })
+
+    it('picking an OpenSongs entry fetches its musicxml; a failed load reports onError and keeps the roller usable', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+        url.endsWith('index.json') ? new Response(JSON.stringify(index), { status: 200 }) : new Response('nope', { status: 404 })))
+      const onError = vi.fn()
+      const { container } = render(<PianoInvaders songs={[legacy]} onError={onError} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      await waitFor(() => expect((container.querySelector('.pi-btn-start') as HTMLButtonElement).disabled).toBe(false))
+      act(() => (container.querySelector('.pi-btn-start') as HTMLElement).click())
+      await waitFor(() => expect(container.querySelector('.pi-pick-error')).toBeTruthy())
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(onError.mock.calls[0][0]).toMatchObject({ code: 'score-load' })
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('songs/hot-cross-buns/song.musicxml'))
+      expect((container.querySelector('.pi-btn-start') as HTMLButtonElement).textContent).toBe('START')
+      expect(titles(container)).toHaveLength(5)
+    })
+
+    it('roller renders a bounded number of DOM rows with 460 entries', async () => {
+      const big = {
+        count: 460,
+        songs: Array.from({ length: 460 }, (_, i) => ({
+          id: `s${i}`, title: `Song ${String(i).padStart(3, '0')}`, difficulty: (i % 5) + 1, files: { musicxml: `songs/s${i}/song.musicxml` },
+        })),
+      }
+      stubIndex(big)
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(container.querySelectorAll('.pi-barrel-item.is-song').length).toBeGreaterThan(5))
+      const n = container.querySelectorAll('.pi-barrel-item.is-song').length
+      expect(n).toBeLessThanOrEqual(20)
+      act(() => (container.querySelector('.pi-btn-barrel-up') as HTMLElement).click()) // wraps to the last of 461
+      expect(container.querySelectorAll('.pi-barrel-item.is-song').length).toBeLessThanOrEqual(20)
+      expect(titles(container)).toContain('Song 459')
+    })
   })
 })
