@@ -378,7 +378,10 @@ export class GameSession {
     this.lit = { midi, t: LIT_SEC }
     const live: LiveNote[] = this.notes.map(n => ({ id: n.id, midi: n.midi, x: n.x, y: n.y, group: n.group, alive: !n.shot }))
     const { moveTo, shots } = resolvePress(midi, this.gun.x, this.o.keyX, live)
-    if (shots.length === 0) return shots
+    if (shots.length === 0) {
+      this.aim(midi)
+      return shots
+    }
     if (moveTo !== null) {
       if (Math.abs(moveTo - this.gun.targetX) > 0.5) this.flushPending()
       this.gun = { ...this.gun, targetX: moveTo }
@@ -394,6 +397,15 @@ export class GameSession {
     }
     this.rateTiming(this.transport.beatAt(now))
     return shots
+  }
+
+  /** Glide the gunship to `midi`'s key (hover or any press) without firing. */
+  aim(midi: number): void {
+    if (this.ended) return
+    const x = this.o.keyX(midi)
+    if (!Number.isFinite(x)) return
+    if (Math.abs(x - this.gun.targetX) > 0.5) this.flushPending()
+    this.gun = { ...this.gun, targetX: x }
   }
 
   private rateTiming(beat: number): void {
@@ -617,6 +629,8 @@ export function useGame(o: UseGameOpts) {
 
   const press = useCallback((midi: number) => { session.current?.press(midi) }, [])
 
+  const aim = useCallback((midi: number) => { session.current?.aim(midi) }, [])
+
   const quit = useCallback(() => {
     const s = session.current
     if (!s || s.ended) return
@@ -639,5 +653,5 @@ export function useGame(o: UseGameOpts) {
     setRunning(false)
   }, [])
 
-  return { running, start, press, quit, setBpm, abort }
+  return { running, start, press, aim, quit, setBpm, abort }
 }

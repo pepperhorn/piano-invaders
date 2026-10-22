@@ -95,6 +95,31 @@ describe('GameSession', () => {
     expect(s.gun.targetX).toBe(keyX(57))
   })
 
+  it('aim moves gunship targetX to the key without firing', () => {
+    const { s, toBeat } = session([{ id: 0, beat: 4, midi: 50, durBeats: 1 }])
+    toBeat(-0.2)
+    const score = s.score
+    s.aim(60)
+    expect(s.gun.targetX).toBe(keyX(60))
+    expect(s.score).toBe(score)
+    expect(s.pending).toHaveLength(0)
+  })
+
+  it('wrong-key press moves gunship to that key', () => {
+    const { s, toBeat } = session([{ id: 0, beat: 4, midi: 50, durBeats: 1 }])
+    toBeat(-0.2)
+    expect(s.press(60)).toEqual([])
+    expect(s.gun.targetX).toBe(keyX(60))
+  })
+
+  it('aim after end is a no-op', () => {
+    const { s } = session([{ id: 0, beat: 4, midi: 50, durBeats: 1 }])
+    const before = s.gun.targetX
+    s.ended = true
+    s.aim(60)
+    expect(s.gun.targetX).toBe(before)
+  })
+
   it('wrong keys play but score nothing and keep the combo', () => {
     const { s, a, toBeat } = session([{ id: 0, beat: 0, midi: 50, durBeats: 1 }, { id: 1, beat: 1, midi: 50, durBeats: 1 }])
     toBeat(-0.2)

@@ -449,6 +449,9 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     setActive(a => new Set(a).add(midi))
     if (screen === 'playing') game.press(midi)
   }, [screen, game])
+  const hover = useCallback((midi: number) => {
+    if (screen === 'playing') game.aim(midi)
+  }, [screen, game])
   const release = useCallback((midi: number) => {
     setActive(a => {
       if (!a.has(midi)) return a
@@ -580,7 +583,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
         </div>
         <span className="pi-strip-text pi-strip-players">1 OR 2 PLAYERS</span>
       </div>
-      <Keyboard active={active} onDown={press} onUp={release} keyRef={keyRef} />
+      <Keyboard active={active} onDown={press} onUp={release} onHover={hover} keyRef={keyRef} />
 
       {screen === 'start' && loadError && (
         <div className="pi-overlay pi-error" role="alert">

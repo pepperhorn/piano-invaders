@@ -6,6 +6,8 @@ export interface KeyboardProps {
   active: ReadonlySet<number>
   onDown(midi: number): void
   onUp(midi: number): void
+  /** pointer entered a key (the gunship follows it) */
+  onHover?(midi: number): void
   /** registers each key element so the parent can measure key centres relative to the canvas */
   keyRef(midi: number, el: HTMLElement | null): void
 }
@@ -17,7 +19,7 @@ function blackCenter(k: PianoKey): number {
   return WHITE_KEYS.filter(w => w.midi < k.midi).length
 }
 
-export default function Keyboard({ active, onDown, onUp, keyRef }: KeyboardProps) {
+export default function Keyboard({ active, onDown, onUp, onHover, keyRef }: KeyboardProps) {
   const [touch, setTouch] = useState(false)
   useEffect(() => {
     const t = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
@@ -28,6 +30,7 @@ export default function Keyboard({ active, onDown, onUp, keyRef }: KeyboardProps
   }, [])
 
   const handlers = (midi: number) => ({
+    onPointerEnter: () => onHover?.(midi),
     onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); onDown(midi) },
     onPointerUp: () => onUp(midi),
     onPointerLeave: () => { if (active.has(midi)) onUp(midi) },
