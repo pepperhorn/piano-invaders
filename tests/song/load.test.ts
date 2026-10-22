@@ -41,12 +41,23 @@ describe('loadSong', () => {
     await expect(loadSong({ scoreUrl: 'https://x.test/missing.mxl' }, { fetchImpl })).rejects.toBeInstanceOf(SongError);
   });
 
-  it('garbage bytes → score-parse; dottl delegates lazily', async () => {
+  it('garbage bytes → score-parse', async () => {
     await expect(loadSong({ file: new Blob([new Uint8Array([1, 2, 3])]), name: 'x.bin' })).rejects.toMatchObject({ code: 'score-parse' });
   });
 });
 
 describe('loadSong dottl', () => {
+  it('real dottl source (string and object) loads', async () => {
+    const text = fs.readFileSync(fx('v7-timesig-stutter.dottl'), 'utf8');
+    const a = await loadSong({ dottl: text });
+    const b = await loadSong({ dottl: JSON.parse(text) }, { title: 'T', difficulty: 5 });
+    expect(a.source).toBe('dottl');
+    expect(a.targets).toHaveLength(5);
+    expect(b.title).toBe('T');
+    expect(b.difficulty).toBe('advanced');
+    await expect(loadSong({ dottl: 'nope' })).rejects.toMatchObject({ code: 'score-parse' });
+  });
+
   it('delegates to dottlToGameSong lazily', async () => {
     vi.resetModules();
     vi.doMock('../../src/song/dottl', () => ({ dottlToGameSong: vi.fn(() => ({ id: 'd', title: 'D' })) }));
