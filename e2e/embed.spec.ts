@@ -30,14 +30,38 @@ test('game fills its 720×480 box, not the viewport', async ({ page }) => {
   expect(Math.round(box!.height)).toBe(480)
 })
 
-test('typing "asdf" in the fixture input does not light any key or fire', async ({ page }) => {
+test('typing in the host input while notes fall does not light any key or fire (Review Focus 3)', async ({ page }) => {
   await open(page)
   await start(page)
-  await page.locator('.embed-fixture-input').focus()
-  await page.keyboard.type('asdf')
-  await expect(page.locator('.embed-fixture-input')).toHaveValue('asdf')
+  await firstNote(page) // the game is playing (past the count-in): a leaked key would light and fire
+  const score = page.locator(`${GAME} .pi-hud-score .pi-hud-value`)
+  const before = await score.textContent()
+  const input = page.locator('.embed-fixture-input')
+  await input.focus()
+  await page.keyboard.down('a') // held, not tapped: a leaked keydown would leave the key lit
+  await page.waitForTimeout(300)
+  await expect(input).toHaveValue('a')
   await expect(page.locator(`${GAME} .pi-key.is-active`)).toHaveCount(0)
-  await expect(page.locator(`${GAME} .pi-hud-score .pi-hud-value`)).toHaveText('000000')
+  await expect(score).toHaveText(before ?? '000000')
+  await page.keyboard.up('a')
+  await page.keyboard.type('sdf')
+  await expect(input).toHaveValue('asdf')
+  await expect(page.locator(`${GAME} .pi-key.is-active`)).toHaveCount(0)
+  await expect(score).toHaveText(before ?? '000000')
+})
+
+test('typing in a text input inside the game (name entry) does not light any key', async ({ page }) => {
+  await open(page)
+  await start(page)
+  await firstNote(page)
+  await page.locator(`${GAME} .pi-btn-quit`).click()
+  const name = page.locator(`${GAME} .pi-name-input`)
+  await name.focus()
+  await page.keyboard.down('a') // the keydown bubbles to the game root: only the text-entry check stops it
+  await page.waitForTimeout(300)
+  await expect(name).toHaveValue('A')
+  await expect(page.locator(`${GAME} .pi-key.is-active`)).toHaveCount(0)
+  await page.keyboard.up('a')
 })
 
 test('after clicking Start, pressing the QWERTY key for the first target hits it (score becomes 10)', async ({ page }) => {

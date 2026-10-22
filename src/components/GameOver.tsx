@@ -21,6 +21,7 @@ export default function GameOver({ stats: s, loadBoard, saveBoard, onRestart }: 
   const [board, setBoard] = useState<LeaderboardEntry[] | null>(null)
   const [rank, setRank] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
+  const submitting = useRef(false)
 
   useEffect(() => {
     const id = setTimeout(() => inputRef.current?.focus(), 400)
@@ -29,7 +30,8 @@ export default function GameOver({ stats: s, loadBoard, saveBoard, onRestart }: 
 
   const submit = async () => {
     const n = name.trim().toUpperCase().slice(0, 6)
-    if (!n) return
+    if (!n || submitting.current) return
+    submitting.current = true
     const entry: LeaderboardEntry = {
       name: n, total: s.total, score: s.score, bpm: s.bpm, hp: s.hp, time: s.seconds, song: s.song,
       maxCombo: s.maxCombo, date: Date.now(),

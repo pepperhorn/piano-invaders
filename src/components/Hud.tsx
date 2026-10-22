@@ -1,7 +1,7 @@
 import { GAME_CONFIG } from '../constants/gameConfig'
 
 export interface HudProps {
-  score: number; hi: number; bpm: number; song: string; combo: number; hp: number; accuracy: number
+  score: number; hi: number; bpm: number | null; song: string; combo: number; hp: number; accuracy: number
   running: boolean
   onQuit(): void
 }
@@ -24,7 +24,7 @@ export default function Hud({ score, hi, bpm, song, combo, hp, accuracy, running
       </div>
       <div className="pi-hud-field pi-hud-bpm">
         <span className="pi-hud-label">BPM</span>
-        <span className="pi-hud-value">{pad(bpm, 3)}</span>
+        <span className="pi-hud-value">{bpm ? pad(bpm, 3) : '—'}</span>
       </div>
       <div className="pi-hud-field pi-hud-song">
         <span className="pi-hud-label">SONG</span>

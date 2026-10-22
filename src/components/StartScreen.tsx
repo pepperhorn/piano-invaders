@@ -25,7 +25,8 @@ export interface StartScreenProps {
   pickError?: string | null
   index: number
   onIndex(i: number): void
-  bpm: number
+  /** null when not known yet (unloaded OpenSongs entry) */
+  bpm: number | null
   ready: boolean
   busy: string | null
   onStart(): void
@@ -142,7 +143,7 @@ export default function StartScreen(p: StartScreenProps) {
               <div className="pi-start-single-meta">
                 <span className={`pi-start-meta-diff pi-diff-${song.difficulty}`}>{song.difficulty}</span>
                 <span className="pi-start-meta-mult">×{DIFFICULTY_MULT[song.difficulty]}</span>
-                <span className="pi-start-meta-bpm">{p.bpm} BPM</span>
+                <span className="pi-start-meta-bpm">{p.bpm ? `${p.bpm} BPM` : '— BPM'}</span>
               </div>
             )}
           </div>
@@ -186,7 +187,7 @@ export default function StartScreen(p: StartScreenProps) {
             </div>
             <div className="pi-barrel-controls">
               <button type="button" className="pi-btn pi-btn-sm pi-btn-barrel-up" aria-label="Previous song" onClick={() => len && p.onIndex(wrap(p.index - 1))}>▲</button>
-              <span className="pi-barrel-bpm">{song && p.bpm > 0 ? `${p.bpm} BPM` : ''}</span>
+              <span className="pi-barrel-bpm">{song ? (p.bpm ? `${p.bpm} BPM` : '— BPM') : ''}</span>
               <button type="button" className="pi-btn pi-btn-sm pi-btn-barrel-down" aria-label="Next song" onClick={() => len && p.onIndex(wrap(p.index + 1))}>▼</button>
             </div>
             {p.onFilter && (

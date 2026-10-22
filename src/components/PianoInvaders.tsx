@@ -64,6 +64,8 @@ const DEFAULT_SONG = {
 }
 
 const AUDIO_LOAD_TIMEOUT_MS = 8000
+const SONG_LOAD_TIMEOUT_MS = 15000
+const AUDIO_RESUME_TIMEOUT_MS = 2000
 const BPM_MIN = 30
 const BPM_MAX = 240
 
@@ -92,6 +94,43 @@ function fallbackKeyX(midi: number, width: number): number {
   if (!k) return width / 2
   const whitesLeft = WHITE_KEYS.filter(w => w.midi < midi).length
   return k.type === 'white' ? (whitesLeft + 0.5) * ww : whitesLeft * ww
+}
+
+/** Resolve with `p`, or reject with a score-load SongError after `ms`. */
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new SongError('score-load', `Timed out loading ${what}.`)), ms)
+  })
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer))
+}
+
+/** Cheap, identity-independent signature of a value (FNV-1a over bytes / JSON text). */
+function hashBytes(bytes: Uint8Array): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) }
+  return `${bytes.length}:${(h >>> 0).toString(36)}`
+}
+function sourceSignature(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'string') return `s:${v.length}:${hashBytes(new TextEncoder().encode(v))}`
+  if (v instanceof ArrayBuffer) return `b:${hashBytes(new Uint8Array(v))}`
+  if (typeof Blob !== 'undefined' && v instanceof Blob) {
+    const f = v as Blob & { name?: string; lastModified?: number }
+    return `f:${f.name ?? ''}:${f.size}:${f.type}:${f.lastModified ?? ''}`
+  }
+  try { return `j:${hashBytes(new TextEncoder().encode(JSON.stringify(v)))}` } catch { return `x:${String(v)}` }
+}
+/** Songs-prop signature: length plus each entry's id / title / name. */
+function songsSignature(list: ReadonlyArray<unknown> | undefined): string {
+  if (!list) return ''
+  return `${list.length}|` + list.map(x => {
+    if (typeof x === 'string') return `s${x.length}`
+    const o = (x ?? {}) as Record<string, unknown>
+    const label = [o.id, o.title, o.name, o.projectName].find(v => typeof v === 'string' || typeof v === 'number')
+    const size = Array.isArray(o.targets) ? o.targets.length : Array.isArray(o.melody) ? o.melody.length : Array.isArray(o.layers) ? o.layers.length : ''
+    return `${String(label ?? '?')}#${size}`
+  }).join('\u0001')
 }
 
 function codeOf(e: unknown, fallback: ErrorCode): ErrorCode {
@@ -134,10 +173,15 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   const src = singleSource(props)
   const srcKey = src ? Object.keys(src)[0] : null
   const srcVal = src ? (Object.values(src)[0] as unknown) : null
+  // reload only when the content changes, not when the host re-renders with a new-but-equal object
+  const srcSig = useMemo(() => sourceSignature(srcVal), [srcVal])
+  const songsSig = useMemo(() => songsSignature(props.songs), [props.songs])
   const mode: 'picker' | 'single' = src || props.showSongPicker === false ? 'single' : 'picker'
   const allowImport = mode === 'picker' && props.allowImport !== false
 
-  const [songs, setSongs] = useState<GameSong[]>([])
+  const [baseSongs, setBaseSongs] = useState<GameSong[]>([])
+  const [imported, setImported] = useState<GameSong[]>([]) // user imports survive a reload of baseSongs
+  const songs = useMemo(() => [...baseSongs, ...imported], [baseSongs, imported])
   const [songsLoaded, setSongsLoaded] = useState(false)
   const [index, setIndex] = useState(0)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -146,15 +190,16 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     let live = true
     const p = propsRef.current
     const run = async () => {
-      if (srcKey) {
+      const single = singleSource(p)
+      if (single) {
         try {
-          const song = await loadSong({ [srcKey]: srcVal } as ScoreSource, { title: p.title, difficulty: p.difficulty })
+          const song = await loadSong(single, { title: p.title, difficulty: p.difficulty })
           if (!live) return
-          setSongs([song]); setIndex(0); setLoadError(null); setSongsLoaded(true)
+          setBaseSongs([song]); setIndex(0); setLoadError(null); setSongsLoaded(true)
         } catch (e) {
           if (!live) return
           report(codeOf(e, 'score-load'), msgOf(e), e)
-          setSongs([]); setLoadError(msgOf(e)); setSongsLoaded(true)
+          setBaseSongs([]); setLoadError(msgOf(e)); setSongsLoaded(true)
         }
         return
       }
@@ -171,11 +216,11 @@ export default function PianoInvaders(props: PianoInvadersProps) {
       for (const s of await registry.getSongs()) add(s)
       if (!live) return
       if (out.length === 0) out.push(legacyToGameSong(DEFAULT_SONG))
-      setSongs(out); setIndex(0); setLoadError(null); setSongsLoaded(true)
+      setBaseSongs(out); setIndex(0); setLoadError(null); setSongsLoaded(true)
     }
     void run()
     return () => { live = false }
-  }, [srcKey, srcVal, props.songs, props.title, props.difficulty, registry, report])
+  }, [srcKey, srcSig, songsSig, props.title, props.difficulty, registry, report])
 
   // ---------------------------------------------------------------- OpenSongs library (own effect: runs once per baseUrl)
   const osEnabled = mode === 'picker' && props.opensongs !== false
@@ -221,7 +266,8 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   }, [all, index])
 
   const song: GameSong | undefined = songs[index]
-  const baseBpm = song ? (mode === 'single' && props.bpm ? props.bpm : song.bpm) : 0
+  // null = not known yet (e.g. an OpenSongs entry that has not been fetched): shown as '—', never 0
+  const baseBpm: number | null = song ? (mode === 'single' && props.bpm ? props.bpm : song.bpm) : null
 
   // ---------------------------------------------------------------- leaderboard
   const adapter: LeaderboardAdapter = props.leaderboard ?? registry.getLeaderboard() ?? localStorageLeaderboard
@@ -345,6 +391,9 @@ export default function PianoInvaders(props: PianoInvadersProps) {
 
   const startSong = useCallback(async (i: number) => {
     if (busy || i < 0) return
+    // Resume inside the click itself: Safari/iOS only unlock audio during the user gesture,
+    // which is lost after the first await (e.g. the OpenSongs fetch below).
+    void resumeAudio()
     let s: GameSong | undefined = songs[i]
     if (!s && i >= songs.length) {
       const entry = entries[i - songs.length]
@@ -358,7 +407,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
         osCache.current.set(entry.id, pending)
       }
       try {
-        s = await pending
+        s = await withTimeout(pending, SONG_LOAD_TIMEOUT_MS, `"${entry.title}"`)
       } catch (e) {
         osCache.current.delete(entry.id)
         report(codeOf(e, 'score-load'), msgOf(e), e)
@@ -372,7 +421,9 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     setBusy('LOADING…')
     rootRef.current?.focus()
     const eng = engine()
-    await resumeAudio()
+    let resumeTimer: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([resumeAudio(), new Promise<void>(r => { resumeTimer = setTimeout(r, AUDIO_RESUME_TIMEOUT_MS) })])
+    clearTimeout(resumeTimer)
     let ctx: AudioContext | null = null
     try { ctx = getAudioContext() } catch { ctx = null }
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -408,6 +459,19 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   }, [])
 
   const held = useRef(new Set<string>())
+  // Focus leaving the game (Alt-Tab, clicking a host input) never delivers the keyups: drop held keys.
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const onFocusOut = (e: FocusEvent) => {
+      const next = e.relatedTarget as Node | null
+      if (next && el.contains(next)) return
+      held.current.clear()
+      setActive(a => (a.size === 0 ? a : new Set()))
+    }
+    el.addEventListener('focusout', onFocusOut)
+    return () => el.removeEventListener('focusout', onFocusOut)
+  }, [])
   useScopedKeys(rootRef, {
     onKeyDown(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return
@@ -450,7 +514,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
       if (!s) throw new SongError('score-parse', 'Unrecognised song file.')
       if (s.targets.length === 0) { setImportStatus({ type: 'error', message: 'NO NOTES FOUND' }); return }
       const added = s
-      setSongs(prev => [...prev, added])
+      setImported(prev => [...prev, added])
       setFilter('all')
       setIndex(songs.length)
       setImportStatus({ type: 'success', message: `LOADED: ${s.title}` })
@@ -507,7 +571,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
                 min={BPM_MIN}
                 max={BPM_MAX}
                 step={1}
-                value={hud.bpm || baseBpm}
+                value={hud.bpm || baseBpm || BPM_MIN}
                 onChange={e => game.setBpm(Number(e.target.value))}
                 onPointerUp={() => rootRef.current?.focus()}
               />

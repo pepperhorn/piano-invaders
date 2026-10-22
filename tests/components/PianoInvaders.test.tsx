@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import { render, cleanup, screen, waitFor, act, within } from '@testing-library/react'
+import { render, cleanup, screen, waitFor, act, within, fireEvent } from '@testing-library/react'
 
 vi.mock('smplr', () => {
   const inst = () => ({ ready: Promise.resolve(), start: vi.fn(), stop: vi.fn() })
@@ -25,7 +25,13 @@ vi.mock('../../src/audio/AudioEngine', () => ({
   },
 }))
 
+vi.mock('../../src/audio/context', async (orig) => ({
+  ...(await orig<typeof import('../../src/audio/context')>()),
+  resumeAudio: vi.fn(async () => {}),
+}))
+
 import PianoInvaders from '../../src/components/PianoInvaders'
+import { resumeAudio } from '../../src/audio/context'
 
 const fx = (n: string) => path.join(__dirname, '../fixtures', n)
 
@@ -199,6 +205,100 @@ describe('PianoInvaders', () => {
       act(() => (container.querySelector('.pi-btn-barrel-up') as HTMLElement).click()) // wraps to the last of 461
       expect(container.querySelectorAll('.pi-barrel-item.is-song').length).toBeLessThanOrEqual(20)
       expect(titles(container)).toContain('Song 459')
+    })
+  })
+
+  describe('final review fixes', () => {
+    const index = JSON.parse(fs.readFileSync(fx('opensongs-index.json'), 'utf8'))
+    const titles = (c: HTMLElement) => [...c.querySelectorAll('.pi-barrel-item.is-song .pi-barrel-name')].map(n => n.textContent)
+    const selectedTitle = (c: HTMLElement) => c.querySelector('.pi-barrel-item.is-selected .pi-barrel-name')?.textContent
+    const startBtn = (c: HTMLElement) => c.querySelector('.pi-btn-start') as HTMLButtonElement
+
+    it('resumeAudio is called synchronously in the Start click, before the OpenSongs fetch resolves', async () => {
+      let resolveSong: ((r: Response) => void) | null = null
+      vi.stubGlobal('fetch', vi.fn((url: string) => url.endsWith('index.json')
+        ? Promise.resolve(new Response(JSON.stringify(index), { status: 200 }))
+        : new Promise<Response>(r => { resolveSong = r })))
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      await waitFor(() => expect(startBtn(container).disabled).toBe(false))
+      vi.mocked(resumeAudio).mockClear()
+      act(() => startBtn(container).click())
+      expect(resumeAudio).toHaveBeenCalledTimes(1)
+      expect(resolveSong).not.toBeNull() // the song fetch is in flight, still unresolved
+    })
+
+    it('a hung OpenSongs fetch times out: pick error shown, START no longer stuck on LOADING', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.stubGlobal('fetch', vi.fn((url: string) => url.endsWith('index.json')
+        ? Promise.resolve(new Response(JSON.stringify(index), { status: 200 }))
+        : new Promise<Response>(() => {})))
+      const onError = vi.fn()
+      const { container } = render(<PianoInvaders songs={[legacy]} onError={onError} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      await waitFor(() => expect(startBtn(container).disabled).toBe(false))
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        act(() => startBtn(container).click())
+        expect(startBtn(container).textContent).toMatch(/LOADING/)
+        await act(async () => { await vi.advanceTimersByTimeAsync(20_000) })
+      } finally {
+        vi.useRealTimers()
+      }
+      await waitFor(() => expect(container.querySelector('.pi-pick-error')).toBeTruthy())
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ code: 'score-load' }))
+      expect(startBtn(container).textContent).toBe('START')
+    })
+
+    it('re-render with an equal-but-new songs array keeps the selection and imported songs; plugin songs() not re-called', async () => {
+      const other = { name: 'Other Tune', bpm: 80, melody: ['E3', 'D3', 'C3'] }
+      const pluginSongs = vi.fn(() => [])
+      const plugins = [{ name: 'p', songs: pluginSongs }]
+      const { container, rerender } = render(<PianoInvaders songs={[legacy, other]} opensongs={false} plugins={plugins} />)
+      await waitFor(() => expect(titles(container)).toEqual(['Tiny Tune', 'Other Tune']))
+      const imported = new File([JSON.stringify({ name: 'Imported Tune', bpm: 90, melody: ['C3', 'E3'] })], 'mine.json', { type: 'application/json' })
+      fireEvent.change(container.querySelector('.pi-import-input') as HTMLInputElement, { target: { files: [imported] } })
+      await waitFor(() => expect(container.querySelector('.pi-import-status')?.textContent).toMatch(/LOADED/))
+      await waitFor(() => expect(titles(container)).toEqual(['Tiny Tune', 'Other Tune', 'Imported Tune']))
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      expect(selectedTitle(container)).toBe('Other Tune')
+      rerender(<PianoInvaders songs={[{ ...legacy }, { ...other }]} opensongs={false} plugins={plugins} />)
+      await act(async () => { await new Promise(r => setTimeout(r, 20)) })
+      expect(titles(container)).toEqual(['Tiny Tune', 'Other Tune', 'Imported Tune'])
+      expect(selectedTitle(container)).toBe('Other Tune')
+      expect(pluginSongs).toHaveBeenCalledTimes(1)
+      // a genuinely different list reloads, but imported songs survive
+      rerender(<PianoInvaders songs={[other]} opensongs={false} plugins={plugins} />)
+      await waitFor(() => expect(titles(container)).toEqual(['Other Tune', 'Imported Tune']))
+    })
+
+    it('held keys are cleared when focus leaves the game', async () => {
+      const { container } = render(<><PianoInvaders songs={[legacy]} opensongs={false} /><input className="host-input" /></>)
+      const root = container.querySelector('.piano-invaders') as HTMLElement
+      const hostInput = container.querySelector('.host-input') as HTMLElement
+      root.focus()
+      fireEvent.keyDown(root, { key: 'a' })
+      expect(container.querySelectorAll('.pi-key.is-active')).toHaveLength(1)
+      fireEvent.focusOut(root, { relatedTarget: hostInput })
+      expect(container.querySelectorAll('.pi-key.is-active')).toHaveLength(0)
+      root.focus()
+      fireEvent.keyDown(root, { key: 'a' }) // the next press is not swallowed as "still held"
+      expect(container.querySelectorAll('.pi-key.is-active')).toHaveLength(1)
+      // focus moving within the game (e.g. to a button) keeps held keys
+      fireEvent.focusOut(root, { relatedTarget: container.querySelector('.pi-btn-start') })
+      expect(container.querySelectorAll('.pi-key.is-active')).toHaveLength(1)
+    })
+
+    it('HUD and roller show — instead of BPM 0 for an unloaded OpenSongs entry', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(index), { status: 200 })))
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      expect(container.querySelector('.pi-hud-bpm .pi-hud-value')?.textContent).toBe('070')
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      expect(container.querySelector('.pi-hud-bpm .pi-hud-value')?.textContent).toBe('—')
+      expect(container.querySelector('.pi-barrel-bpm')?.textContent).not.toMatch(/\b0 BPM/)
     })
   })
 })
