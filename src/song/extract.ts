@@ -1,9 +1,18 @@
-import type { AccompNote, Target } from './types';
+import type { AccompNote, Target, VoiceInfo } from './types';
 import { bestTransposition, foldIntoRange } from './pitch';
 
 export interface RawNote { beat: number; midi: number; durBeats: number; velocity: number; voice: string; melody: boolean }
 
 const EPS = 1e-6;
+
+/** Voice id buildTargets gives to the inner notes of 3+-note melody chords (played, not targeted). */
+export const MELODY_INNER = 'melody-inner';
+
+/** Register the MELODY_INNER voice with the melody's instrument, so inner chord notes play on it. */
+export function addInnerVoice(voices: Record<string, VoiceInfo>, melody: VoiceInfo | undefined): Record<string, VoiceInfo> {
+  if (melody && !(MELODY_INNER in voices)) voices[MELODY_INNER] = { ...melody, percussion: false };
+  return voices;
+}
 
 export function buildTargets(notes: RawNote[]): { targets: Target[]; accompaniment: AccompNote[]; transpose: number } {
   const accompaniment: AccompNote[] = notes
@@ -32,7 +41,7 @@ export function buildTargets(notes: RawNote[]): { targets: Target[]; accompanime
     const hi = sorted[0];
     const lo = sorted[sorted.length - 1];
     for (const inner of sorted.slice(1, -1)) {
-      accompaniment.push({ beat: inner.beat, midi: inner.midi, durBeats: inner.durBeats, velocity: inner.velocity, voice: 'melody-inner' });
+      accompaniment.push({ beat: inner.beat, midi: inner.midi, durBeats: inner.durBeats, velocity: inner.velocity, voice: MELODY_INNER });
     }
     const hiMidi = fold(hi.midi);
     const loMidi = fold(lo.midi);

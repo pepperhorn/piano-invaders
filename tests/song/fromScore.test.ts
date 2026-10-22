@@ -75,6 +75,24 @@ describe('scoreToGameSong', () => {
     expect((err as SongError).message).toBe('The first part has no playable notes.');
   });
 
+  it('percussion-only first part throws SongError score-parse (Review Focus 2)', () => {
+    const doc = xml('percussion-first-part.musicxml');
+    expect(doc.voices[0].percussion).toBe(true);
+    let err: unknown;
+    try { scoreToGameSong(doc); } catch (e) { err = e; }
+    expect(err).toBeInstanceOf(SongError);
+    expect((err as SongError).code).toBe('score-parse');
+    expect((err as SongError).message).toBe('The first part has no playable notes.');
+  });
+
+  it("registers a 'melody-inner' voice with the first part's instrument", () => {
+    const song = scoreToGameSong(xml('grand-staff-plus-violin.musicxml'));
+    expect(song.accompaniment.some((a) => a.voice === 'melody-inner')).toBe(true);
+    const p1 = Object.entries(song.voices).find(([id]) => id.includes('P1'))![1];
+    expect(song.voices['melody-inner']).toMatchObject({ instrument: p1.instrument, volume: p1.volume });
+    expect(song.voices['melody-inner'].percussion).toBeFalsy();
+  });
+
   it('MIDI: first track melody, second track accompaniment', () => {
     const buf = fs.readFileSync(fx('two-track.mid'));
     const doc = parseMidi(Uint8Array.from(buf).buffer as ArrayBuffer, 'two-track', { mode: 'scale', scale: 1 });

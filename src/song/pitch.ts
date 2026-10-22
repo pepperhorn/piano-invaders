@@ -48,7 +48,8 @@ export function bestTransposition(pitches: number[], lo = 47, hi = 64): number {
 
 export function difficultyFromCrf(n: number | null | undefined): Difficulty {
   if (n == null || Number.isNaN(n)) return 'easy';
-  if (n <= 2) return 'easy';
-  if (n === 3) return 'intermediate';
+  const r = Math.round(n);
+  if (r <= 2) return 'easy';
+  if (r === 3) return 'intermediate';
   return 'advanced';
 }

@@ -18,11 +18,21 @@ function parse<T>(fn: () => T): T {
   }
 }
 
+const UNRECOGNISED = 'Unrecognised score file (expected MusicXML, MXL, MIDI or .dottl).';
+
 function parseBytes(buf: ArrayBuffer, name: string): ScoreDocument {
-  const kind = sniffScoreFile(new Uint8Array(buf));
-  if (kind === null) throw new SongError('score-parse', 'Unrecognised score file (expected MusicXML, MXL or MIDI).');
   // parseScoreFile dispatches on the sniffed kind: MIDI, MXL (unzip) or plain MusicXML.
   return parseScoreFile(buf, name, SETTING);
+}
+
+/** Bytes that are not a score but parse as a dottl JSON document, else null. */
+function dottlFromBytes(buf: ArrayBuffer): object | null {
+  try {
+    const data: unknown = JSON.parse(new TextDecoder().decode(buf));
+    return typeof data === 'object' && data !== null ? data : null;
+  } catch {
+    return null;
+  }
 }
 
 const decodeEntities = (t: string) =>
@@ -44,6 +54,11 @@ function bytesTitle(buf: ArrayBuffer): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function titleFromDottl(d: object): string | undefined {
+  const n = (d as { projectName?: unknown }).projectName;
+  return typeof n === 'string' && n ? n : undefined;
 }
 
 function nameFromUrl(url: string): string {
@@ -88,6 +103,12 @@ export async function loadSong(src: ScoreSource, opts: LoadSongOpts = {}): Promi
       const msg = cause instanceof Error ? cause.message : String(cause);
       throw new SongError('score-load', `Could not read the score file: ${msg}`, { cause });
     }
+  }
+  if (sniffScoreFile(new Uint8Array(buf)) === null) {
+    const data = dottlFromBytes(buf);
+    const { dottlToGameSong, isDottl } = await import('./dottl');
+    if (!data || !isDottl(data)) throw new SongError('score-parse', UNRECOGNISED);
+    return parse(() => dottlToGameSong(data, { ...sopts, title: opts.title ?? titleFromDottl(data) ?? name }));
   }
   const title = opts.title ?? bytesTitle(buf) ?? name;
   return parse(() => scoreToGameSong(parseBytes(buf, title), { ...sopts, title }));

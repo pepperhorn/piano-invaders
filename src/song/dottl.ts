@@ -1,6 +1,6 @@
 import type { AccompNote, Difficulty, GameSong, Target, VoiceInfo } from './types';
 import { SongError } from './errors';
-import { buildTargets, type RawNote } from './extract';
+import { addInnerVoice, buildTargets, type RawNote } from './extract';
 import { difficultyFromCrf, noteNameToMidi } from './pitch';
 
 export interface DottlNote {
@@ -115,6 +115,7 @@ export function dottlToGameSong(input: object | string, opts: { title?: string; 
 
   const { targets, accompaniment } = buildTargets(raw);
   if (targets.length === 0) throw new SongError('score-parse', 'The first layer has no playable notes.');
+  addInnerVoice(voices, voices[String(layers[0].id ?? 'layer-0')]);
 
   const endBeat = raw.reduce((mx, x) => Math.max(mx, x.beat + x.durBeats), 0);
   const lengthBeats = Math.max(1, Math.ceil(endBeat / beatsPerBar - 1e-9)) * beatsPerBar;

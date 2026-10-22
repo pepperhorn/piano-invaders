@@ -29,6 +29,10 @@ describe('pitch', () => {
     expect(difficultyFromCrf(3)).toBe('intermediate');
     expect(difficultyFromCrf(4)).toBe('advanced');
     expect(difficultyFromCrf(5)).toBe('advanced');
+    expect(difficultyFromCrf(2.4)).toBe('easy');
+    expect(difficultyFromCrf(2.5)).toBe('intermediate');
+    expect(difficultyFromCrf(3.4)).toBe('intermediate');
+    expect(difficultyFromCrf(3.5)).toBe('advanced');
     expect(difficultyFromCrf(null)).toBe('easy');
     expect(difficultyFromCrf(undefined)).toBe('easy');
   });

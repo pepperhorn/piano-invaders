@@ -59,16 +59,53 @@ describe('AudioEngine', () => {
     vi.unstubAllGlobals();
   });
 
-  it('load creates one instrument per voice and SplendidGrandPiano once', async () => {
+  it('load creates one instrument per accompaniment voice and SplendidGrandPiano once', async () => {
     const { AudioEngine } = await import('../../src/audio/AudioEngine');
     const e = new AudioEngine(fakeCtx());
-    await e.load(song(), 'piano');
+    const s = song();
+    s.accompaniment.push({ beat: 1, midi: 40, durBeats: 1, velocity: 90, voice: 'b' }, { beat: 1, midi: 36, durBeats: 1, velocity: 90, voice: 'd' });
+    await e.load(s, 'piano');
     expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(1);
     expect(smplr.Soundfont).toHaveBeenCalledTimes(2);
     expect(smplr.DrumMachine).toHaveBeenCalledTimes(1);
     e.scheduleAccomp(song().accompaniment[0], 1, 0.5);
     const sf = made.find((m) => m.kind === 'soundfont' && (m.opts as { instrument: string }).instrument === 'violin')!;
-    expect(sf.start).toHaveBeenCalledWith(expect.objectContaining({ note: 60, time: 1, duration: 0.5, velocity: 90 }));
+    expect(sf.start).toHaveBeenCalledWith(expect.objectContaining({ note: 60, time: 1, duration: 0.5 }));
+  });
+
+  it('load skips voices no accompaniment note references (e.g. melody voices)', async () => {
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const e = new AudioEngine(fakeCtx());
+    const s = song();
+    s.voices.melody = { instrument: 'Splendid Grand Piano', volume: 1 };
+    await e.load(s, 'piano'); // only 'a' (violin) is referenced
+    expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(1); // the player piano only
+    expect(made.filter((m) => m.kind === 'soundfont').map((m) => (m.opts as { instrument: string }).instrument)).toEqual(['violin']);
+    expect(smplr.DrumMachine).not.toHaveBeenCalled();
+  });
+
+  it('voices resolving to the same instrument share one instance; a splendid voice shares the player piano', async () => {
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const e = new AudioEngine(fakeCtx());
+    const s = song();
+    s.voices = {
+      v1: { instrument: 'violin', volume: 1 },
+      v2: { instrument: 'violin', volume: 0.5 },
+      melody: { instrument: 'Splendid Grand Piano', volume: 0.7 },
+      'melody-inner': { instrument: 'Splendid Grand Piano', volume: 0.7 },
+    };
+    s.accompaniment = (['v1', 'v2', 'melody-inner'] as const).map((voice, i) => ({ beat: i, midi: 60 + i, durBeats: 1, velocity: 100, voice }));
+    await e.load(s, 'piano');
+    expect(smplr.Soundfont).toHaveBeenCalledTimes(1);
+    expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(1);
+    const piano = made.find((m) => m.kind === 'piano')!;
+    const violin = made.find((m) => m.kind === 'soundfont')!;
+    e.scheduleAccomp(s.accompaniment[0], 1, 0.5);
+    e.scheduleAccomp(s.accompaniment[1], 2, 0.5);
+    e.scheduleAccomp(s.accompaniment[2], 3, 0.5);
+    expect(violin.start).toHaveBeenCalledTimes(2);
+    expect(violin.start.mock.calls[1][0].velocity).toBeLessThan(violin.start.mock.calls[0][0].velocity); // per-voice volume kept
+    expect(piano.start).toHaveBeenCalledWith(expect.objectContaining({ note: 62, time: 3 })); // inner chord note: piano, not synth beep
   });
 
   it('instrument load failure calls onError with code audio and does not throw', async () => {
@@ -111,13 +148,14 @@ describe('AudioEngine', () => {
       gm: { instrument: 'percussive_organ', volume: 1 },
       keys: { instrument: 'Keys', volume: 1 },
     };
+    s.accompaniment = Object.keys(s.voices).map((voice) => ({ beat: 0, midi: 60, durBeats: 1, velocity: 90, voice }));
     const onError = vi.fn();
     e.onError = onError;
     await e.load(s, 'piano');
     expect(onError).not.toHaveBeenCalled();
     const drumOpts = made.filter((m) => m.kind === 'drum').map((m) => (m.opts as { instrument: string }).instrument);
-    expect(drumOpts).toEqual(['LM-2', 'LM-2']);
-    expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(2); // player piano + splendid voice
+    expect(drumOpts).toEqual(['LM-2']); // both drum voices resolve to LM-2: one shared instance
+    expect(smplr.SplendidGrandPiano).toHaveBeenCalledTimes(1); // the splendid voice shares the player piano
     const sf = made.filter((m) => m.kind === 'soundfont').map((m) => (m.opts as { instrument: string }).instrument);
     expect(sf).toEqual(['percussive_organ', 'acoustic_grand_piano']);
   });
@@ -129,6 +167,7 @@ describe('AudioEngine', () => {
     const oldSf = made.filter((m) => m.kind === 'soundfont');
     const s2 = song();
     s2.voices = { z: { instrument: 'violin', volume: 1 } };
+    s2.accompaniment = [{ beat: 0, midi: 60, durBeats: 1, velocity: 90, voice: 'z' }];
     await e.load(s2, 'piano');
     oldSf.forEach((m) => expect(m.stop).toHaveBeenCalled());
     const ids = [...(e as unknown as { voices: Map<string, unknown> }).voices.keys()];

@@ -12,7 +12,9 @@ interface Playable {
   start(e: { note: number | string; time?: number; duration?: number | null; velocity?: number }): unknown;
   stop(): void;
 }
-interface VoiceSlot { inst: Playable | null; gain: GainNode; percussion: boolean }
+interface VoiceSlot { inst: Playable | null; percussion: boolean; volume: number }
+/** One loaded instrument, shared by every voice that resolves to it. */
+interface InstSlot { inst: Playable | null; gain: GainNode | null }
 
 const PIANO_VELOCITY = 90;
 const DEFAULT_DRUMS = 'LM-2';
@@ -24,6 +26,8 @@ export type InstrumentChoice =
   | { kind: 'soundfont'; instrument: string };
 
 const norm = (n: string) => n.toLowerCase().replace(/[\s_-]+/g, '');
+const choiceKey = (c: InstrumentChoice) => (c.kind === 'splendid' ? 'splendid' : `${c.kind}:${c.instrument}`);
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Map a voice's instrument string (GM name, smplr patch or category) to a concrete smplr instrument. */
 export function resolveInstrument(instrument: string, percussion: boolean): InstrumentChoice {
@@ -44,6 +48,7 @@ export class AudioEngine {
   private piano: Playable | null = null;
   private playerVoice: 'piano' | 'synth' = 'piano';
   private voices = new Map<string, VoiceSlot>();
+  private insts = new Map<string, InstSlot>();
   private metro: Metronome | null = null;
   private reported = new Set<string>();
   private unavailable = false;
@@ -86,10 +91,11 @@ export class AudioEngine {
   }
 
   private teardownVoices(): void {
-    for (const v of this.voices.values()) {
-      try { v.inst?.stop(); } catch { /* already stopped */ }
-      v.gain.disconnect();
+    for (const i of this.insts.values()) {
+      if (i.inst !== this.piano) { try { i.inst?.stop(); } catch { /* already stopped */ } }
+      i.gain?.disconnect();
     }
+    this.insts.clear();
     this.voices.clear();
   }
 
@@ -105,18 +111,38 @@ export class AudioEngine {
       ? Promise.resolve(this.piano)
       : this.build('piano', () => SplendidGrandPiano(ctx, { destination: master }) as unknown as Playable);
 
-    const voiceJobs = Object.entries(song.voices).map(async ([id, v]) => {
-      const gain = ctx.createGain();
-      gain.gain.value = Math.min(1, Math.max(0, v.volume));
-      gain.connect(master);
-      const choice = resolveInstrument(v.instrument, !!v.percussion);
-      const inst = await this.build(`voice "${id}" (${v.instrument})`, () => {
-        if (choice.kind === 'drum') return DrumMachine(ctx, { instrument: choice.instrument, destination: gain }) as unknown as Playable;
-        if (choice.kind === 'splendid') return SplendidGrandPiano(ctx, { destination: gain }) as unknown as Playable;
-        return Soundfont(ctx, { instrument: choice.instrument, destination: gain }) as unknown as Playable;
+    // Only voices that accompaniment notes play are loaded (melody voices never sound through
+    // the engine), and voices resolving to the same instrument share one instance. A splendid
+    // voice shares the player piano. Per-voice volume is applied as a velocity scale.
+    const used = new Set(song.accompaniment.map((n) => n.voice));
+    const jobs = new Map<string, Promise<Playable | null>>();
+    const voiceJobs = Object.entries(song.voices)
+      .filter(([id]) => used.has(id))
+      .map(async ([id, v]) => {
+        const choice = resolveInstrument(v.instrument, !!v.percussion);
+        const key = choiceKey(choice);
+        let job = jobs.get(key);
+        if (!job) {
+          if (choice.kind === 'splendid') {
+            job = pianoP;
+            this.insts.set(key, { inst: null, gain: null });
+          } else {
+            const gain = ctx.createGain();
+            gain.gain.value = 1;
+            gain.connect(master);
+            const slot: InstSlot = { inst: null, gain };
+            this.insts.set(key, slot);
+            job = this.build(`voice "${id}" (${v.instrument})`, () =>
+              choice.kind === 'drum'
+                ? (DrumMachine(ctx, { instrument: choice.instrument, destination: gain }) as unknown as Playable)
+                : (Soundfont(ctx, { instrument: choice.instrument, destination: gain }) as unknown as Playable),
+            ).then((inst) => { slot.inst = inst; return inst; });
+          }
+          jobs.set(key, job);
+        }
+        const inst = await job;
+        this.voices.set(id, { inst, percussion: !!v.percussion, volume: clamp01(v.volume) });
       });
-      this.voices.set(id, { inst, gain, percussion: !!v.percussion });
-    });
 
     const [piano] = await Promise.all([pianoP, Promise.all(voiceJobs), this.metro.load()]);
     this.piano = piano;
@@ -143,7 +169,8 @@ export class AudioEngine {
     const slot = this.voices.get(n.voice);
     try {
       if (slot?.inst) {
-        slot.inst.start({ note: n.midi, time: whenSec, duration: durSec, velocity: n.velocity });
+        const velocity = Math.max(1, Math.min(127, Math.round(n.velocity * slot.volume)));
+        slot.inst.start({ note: n.midi, time: whenSec, duration: durSec, velocity });
       } else if (!slot?.percussion) {
         this.synth(n.midi, whenSec, durSec, 0.08 * (n.velocity / 127));
       }
@@ -169,7 +196,7 @@ export class AudioEngine {
   }
 
   stopAll(): void {
-    for (const i of [this.piano, ...[...this.voices.values()].map((v) => v.inst)]) {
+    for (const i of new Set([this.piano, ...[...this.insts.values()].map((v) => v.inst)])) {
       try { i?.stop(); } catch { /* already stopped */ }
     }
   }

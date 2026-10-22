@@ -1,5 +1,5 @@
 import type { ScoreDocument } from 'ivories/core';
-import { buildTargets, type RawNote } from './extract';
+import { addInnerVoice, buildTargets, type RawNote } from './extract';
 import { SongError } from './errors';
 import { difficultyFromCrf } from './pitch';
 import type { Difficulty, GameSong, VoiceInfo } from './types';
@@ -31,7 +31,8 @@ function melodyVoiceIds(doc: ScoreDocument): Set<string> {
       (firstXmlVoice?.source?.kind === 'xml-part' ? firstXmlVoice.source.partId : null);
     if (firstPartId === null) return ids;
     for (const v of doc.voices) {
-      if (v.source?.kind === 'xml-part' && v.source.partId === firstPartId) ids.add(v.id);
+      // a percussion first part (drum kit) has no playable pitches: it must not become the melody
+      if (v.source?.kind === 'xml-part' && v.source.partId === firstPartId && !v.percussion) ids.add(v.id);
     }
     return ids;
   }
@@ -68,6 +69,8 @@ export function scoreToGameSong(doc: ScoreDocument, opts: ScoreToSongOpts = {}):
   for (const v of doc.voices) {
     voices[v.id] = { instrument: v.instrument, volume: v.volume, percussion: v.percussion };
   }
+  const firstMelody = doc.voices.find((v) => melodyIds.has(v.id));
+  addInnerVoice(voices, firstMelody ? voices[firstMelody.id] : undefined);
 
   const title = opts.title ?? doc.name;
   const song: GameSong = {

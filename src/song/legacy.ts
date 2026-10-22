@@ -1,6 +1,6 @@
 import type { Difficulty, GameSong } from './types';
 import { SongError } from './errors';
-import { buildTargets, type RawNote } from './extract';
+import { addInnerVoice, buildTargets, type RawNote } from './extract';
 import { noteNameToMidi } from './pitch';
 
 type Slot = string | null;
@@ -34,7 +34,7 @@ export function legacyToGameSong(song: LegacySong): GameSong {
   const difficulty: Difficulty = d === 'easy' || d === 'intermediate' || d === 'advanced' ? d : 'easy';
   return {
     id: song.name, title: song.name, bpm: Math.round(song.bpm), beatsPerBar: 4, difficulty, targets, accompaniment,
-    voices: { melody: { instrument: 'Splendid Grand Piano', volume: 0.7 } },
+    voices: addInnerVoice({ melody: { instrument: 'Splendid Grand Piano', volume: 0.7 } }, { instrument: 'Splendid Grand Piano', volume: 0.7 }),
     lengthBeats: Math.max(1, Math.ceil(song.melody.length / 4 - 1e-9)) * 4,
     source: 'legacy',
   };

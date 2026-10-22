@@ -68,6 +68,28 @@ describe('loadSong dottl', () => {
   });
 });
 
+describe('loadSong .dottl via scoreUrl / file', () => {
+  const text = () => fs.readFileSync(fx('v7-timesig-stutter.dottl'), 'utf8');
+
+  it('scoreUrl with a .dottl body loads as dottl', async () => {
+    const fetchImpl = vi.fn(async () => new Response(text(), { status: 200 })) as unknown as typeof fetch;
+    const song = await loadSong({ scoreUrl: 'https://x.test/songs/tune.dottl' }, { fetchImpl });
+    expect(song.source).toBe('dottl');
+    expect(song.targets).toHaveLength(5);
+  });
+
+  it('file Blob with a .dottl body loads as dottl', async () => {
+    const song = await loadSong({ file: new Blob([text()], { type: 'application/json' }), name: 'tune.dottl' }, { title: 'Mine' });
+    expect(song.source).toBe('dottl');
+    expect(song.title).toBe('Mine');
+    expect(song.targets).toHaveLength(5);
+  });
+
+  it('JSON that is not a dottl → score-parse', async () => {
+    await expect(loadSong({ file: new Blob(['{"hello":1}']), name: 'x.json' })).rejects.toMatchObject({ code: 'score-parse' });
+  });
+});
+
 describe('loadSong titles', () => {
   it('uses <work-title> when no title option is given', async () => {
     const xml = fs.readFileSync(fx('leadsheet-then-piano.musicxml'), 'utf8')

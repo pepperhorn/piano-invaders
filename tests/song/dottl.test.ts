@@ -90,4 +90,22 @@ describe('dottl reader', () => {
     expect(() => dottlToGameSong('not json')).toThrow(SongError);
     expect(() => dottlToGameSong({})).toThrowError(expect.objectContaining({ code: 'score-parse' }));
   });
+
+  it("melody chords register a 'melody-inner' voice with layer 0's instrument", () => {
+    const n = (name: string, octave: number, id: string) => ({ id, name, octave, col: 1, row: 0, isRoot: false, sustainCells: 0 });
+    const song = dottlToGameSong({
+      version: 7, projectName: 'Chord', bpm: 90, divisor: 1, beatsPerBar: 4, transposition: 0,
+      layers: [
+        { id: 'mel', name: 'Melody', color: '', instrumentCategory: 'Keys', smplrPatch: 'violin', volume: 50, lines: [],
+          notes: [n('C', 3, 'a'), n('E', 3, 'b'), n('G', 3, 'c')] },
+      ],
+    });
+    expect(song.accompaniment.some((a) => a.voice === 'melody-inner')).toBe(true);
+    expect(song.voices['melody-inner']).toMatchObject({ instrument: 'violin', volume: 0.5 });
+  });
+
+  it("legacy chords register a 'melody-inner' voice", () => {
+    const song = legacyToGameSong({ name: 'L', bpm: 60, melody: [['C3', 'E3', 'G3']] as never });
+    expect(song.voices['melody-inner']).toMatchObject({ instrument: song.voices.melody.instrument });
+  });
 });
