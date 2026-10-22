@@ -543,6 +543,8 @@ function paint(c: HTMLCanvasElement, f: FrameState): void {
   try {
     const ctx = c.getContext('2d')
     if (ctx) drawFrame(ctx, f)
+    // dev-only: lets the embed e2e tests read note positions (stripped from production builds)
+    if (import.meta.env.DEV) (c as HTMLCanvasElement & { __piNotes?: unknown }).__piNotes = f.notes.map(n => ({ midi: n.midi, x: n.x, y: n.y }))
   } catch { /* skip this frame */ }
 }
 
