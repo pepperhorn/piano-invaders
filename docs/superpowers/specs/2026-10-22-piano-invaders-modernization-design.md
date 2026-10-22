@@ -144,6 +144,13 @@ All converters produce this model: MusicXML, MIDI (a free bonus via ivories, whe
   />
   ```
 
+- **OpenSongs library (added 2026-10-22 by request).** By default, picker mode adds every song from the PepperHorn OpenSongs library (github.com/pepperhorn/opensongs-json, CC0, 457 songs) to the song roller.
+  - The roller reads `index.json` from `https://cdn.jsdelivr.net/gh/pepperhorn/opensongs-json@master/`; the base URL can be overridden with a prop, and jsDelivr is already in becreative's CSP.
+  - Picking a song fetches its `song.musicxml` and loads it through the normal MusicXML path.
+  - Index difficulty 1–5 maps through the crf mapping.
+  - Bundled songs come first, then OpenSongs songs sorted by difficulty, then title.
+  - A difficulty filter (All / Easy / Intermediate / Advanced) keeps the long roller usable. *(The filter is my call.)*
+  - If the index fails to load, the bundled songs still work and the error is reported once via `onError` (`score-load`).
 - **Single-song mode** skips the song barrel and shows Start → Game → Game Over for that piece.
 - **Looping (decided).** Songs keep looping until HP reaches 0 or the player quits, as today. There is no end-of-song state for now.
 - **Embed-safety rules.**

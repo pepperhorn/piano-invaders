@@ -535,6 +535,52 @@ export { loadSong, dottlToGameSong, gameSongToDottl, isDottl, scoreToGameSong } 
 - [ ] **Step 5:** Run `npm test && npm run test:e2e && npm run build`. Expected: all pass.
 - [ ] **Step 6:** Update the docs.
   - `CLAUDE.md`: the new architecture (song/audio/game/render layers), commands, the TS stack and the embed rules.
-  - `EMBEDDING_GUIDE.md`: props table, CSS import, fonts the host must load, and a becreative Astro island example. The `embed` gate is noted as TBD.
+  - `EMBEDDING_GUIDE.md`: props table (including `opensongs`), CSS import, fonts the host must load, and a becreative Astro island example. The `embed` gate is noted as TBD.
   - `README.md`: brief.
 - [ ] **Step 7:** Commit: `feat: ESM library build, embed fixture, e2e tests, docs`.
+
+---
+
+### Task 11: OpenSongs library in the song roller (runs after Task 9, before Task 10)
+
+**Files:**
+- Create: `src/song/opensongs.ts`, `tests/song/opensongs.test.ts`, `tests/fixtures/opensongs-index.json` (a 4-entry excerpt of the real index, covering difficulties 1, 2, 3 and 5)
+- Modify: the start screen and roller (`src/components/StartScreen.tsx` and helpers) to show OpenSongs entries and the difficulty filter; `src/components/PianoInvaders.tsx` (props); `src/index.ts` (exports)
+
+**Interfaces:**
+- Produces:
+
+```ts
+export const OPENSONGS_BASE_URL = 'https://cdn.jsdelivr.net/gh/pepperhorn/opensongs-json@master/'
+export interface OpenSongEntry { id: string; title: string; composer?: string; difficulty: Difficulty; level: number; key?: string; timeSignature?: [number, number]; musicxmlUrl: string }
+export async function loadOpenSongsIndex(opts?: { baseUrl?: string; fetchImpl?: typeof fetch }): Promise<OpenSongEntry[]>  // sorted by level, then title
+export async function loadOpenSong(entry: OpenSongEntry, opts?: { fetchImpl?: typeof fetch }): Promise<GameSong>   // loadSong({ scoreUrl: entry.musicxmlUrl }, { title: entry.title, difficulty: entry.level })
+```
+
+- **New prop on `PianoInvadersProps`:** `opensongs?: boolean | { baseUrl?: string }`. It defaults to `true` in picker mode and is ignored in single-song mode.
+- **Index format** (from `opensongs-json/index.json`): `{ count, songs: [{ id, title, composer, difficulty: 1-5, key, timeSignature: [n, d], files: { musicxml: 'songs/<id>/song.musicxml' } }] }`. `musicxmlUrl = baseUrl + files.musicxml`.
+
+**Behaviour:**
+- **Loading.** The index is fetched lazily when the start screen mounts in picker mode. While it loads, the roller shows bundled songs plus a loading row. On failure, `onError({ code: 'score-load', … })` is called once and bundled songs stay usable.
+- **Roller order.** Bundled songs first, then OpenSongs entries in index sort order.
+- **Difficulty filter.** All / Easy / Intermediate / Advanced, as pill buttons with `aria-pressed` and contextual class names, styled in the B cabinet look. The filter applies to both bundled and OpenSongs entries.
+- **The roller must stay smooth with about 460 entries.** Render only the visible window of the barrel (virtualise), not every item.
+- **Picking a song.** Picking an OpenSongs entry calls `loadOpenSong` with a per-song in-memory cache, showing "Loading…" on the Start button until it resolves. A failed load calls `onError` with an error panel; the roller stays usable.
+
+- [ ] **Step 1: Failing tests** (`opensongs.test.ts`, with `fetchImpl` stubbed and the fixture index):
+  - `index maps to entries with absolute musicxmlUrl and crf difficulty mapping (1,2→easy; 3→intermediate; 5→advanced)`
+  - `entries sorted by level then title`
+  - `custom baseUrl is used`
+  - `index 500 → SongError score-load`
+  - `loadOpenSong fetches the musicxml url and returns a GameSong titled from the entry`, using `tests/fixtures/leadsheet-then-piano.musicxml` as the body
+- [ ] **Step 2: Failing tests** (component, with `fetchImpl` / global fetch mocked):
+  - `picker shows bundled songs then OpenSongs titles`
+  - `difficulty filter narrows the roller`
+  - `opensongs={false} shows bundled only`
+  - `index failure → onError once, bundled songs still selectable`
+  - `roller renders a bounded number of DOM rows with 460 entries` (virtualisation)
+- [ ] **Step 3:** Run. Expected: FAIL.
+- [ ] **Step 4:** Implement.
+- [ ] **Step 5:** Run `npm test && npm run typecheck && npm run lint`. Expected: PASS.
+- [ ] **Step 6: Manual check** on the dev server: scroll the roller and filter it, pick "Hot Cross Buns", and play.
+- [ ] **Step 7:** Commit: `feat: OpenSongs library in the song roller`.
