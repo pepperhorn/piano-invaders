@@ -29,3 +29,7 @@ import 'piano-invaders/style.css'
 See [EMBEDDING_GUIDE.md](EMBEDDING_GUIDE.md) for props, fonts, CSP and an Astro example, and [CLAUDE.md](CLAUDE.md) for the architecture.
 
 Song format: [dottl](https://github.com/pepperhorn/dottl-spec).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

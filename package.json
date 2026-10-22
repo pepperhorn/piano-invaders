@@ -22,7 +22,7 @@
     "rhythm"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@fontsource/poppins": "^5.3.0",
     "@fontsource/press-start-2p": "^5.3.0",
@@ -50,7 +50,8 @@
     "*.css"
   ],
   "files": [
-    "lib"
+    "lib",
+    "LICENSE"
   ],
   "main": "./lib/index.js",
   "module": "./lib/index.js",
