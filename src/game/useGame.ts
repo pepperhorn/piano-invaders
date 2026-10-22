@@ -207,7 +207,7 @@ export class GameSession {
     if (width === this.width && height === this.height) return
     this.width = width
     this.height = height
-    this.land.resize(width)
+    this.land.resize(width, stageMetrics(width, height).landHeight)
   }
 
   get bpm(): number { return this.transport.getBpm() }
@@ -386,16 +386,18 @@ export class GameSession {
       if (Math.abs(moveTo - this.gun.targetX) > 0.5) this.flushPending()
       this.gun = { ...this.gun, targetX: moveTo }
     }
+    let rated: NoteRt | undefined
     for (const shot of shots) {
       const n = this.notes.find(x => x.id === shot.noteId)
       if (!n) continue
+      if (!rated || (n.midi === midi && rated.midi !== midi)) rated = n
       n.shot = true
       this.score += GAME_CONFIG.POINTS_PER_NOTE
       this.combo = onHit(this.combo)
       this.pending.push({ shot, at: now, waitsForShip: moveTo !== null })
       this.o.onHit?.({ midi: n.midi, x: n.x, y: n.y })
     }
-    this.rateTiming(this.transport.beatAt(now))
+    if (rated) this.rateTiming(this.transport.beatAt(now), rated.absBeat)
     return shots
   }
 
@@ -408,11 +410,13 @@ export class GameSession {
     this.gun = { ...this.gun, targetX: x }
   }
 
-  private rateTiming(beat: number): void {
-    const off = Math.abs(beat - Math.round(beat))
+  /** Rate a hit against the struck note's own beat (off-beat notes included). */
+  private rateTiming(beat: number, noteBeat: number): void {
+    const off = Math.abs(beat - noteBeat)
     if (off < 0.25) this.accuracy = Math.min(100, this.accuracy + 2)
     else if (off > 0.4) this.accuracy = Math.max(0, this.accuracy - 4)
-    this.lastHitBeat = Math.round(beat)
+    // decay() checks whole beats [k-1, k): mark the one that holds the struck note
+    this.lastHitBeat = Math.max(this.lastHitBeat, Math.floor(noteBeat + 1e-9))
   }
 
   /** The gunship was retargeted mid-glide: shots still waiting fire now from where it is. */

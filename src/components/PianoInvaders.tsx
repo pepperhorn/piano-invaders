@@ -241,6 +241,9 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   const library: LibraryStatus = !osEnabled ? 'off' : !osCurrent ? 'loading' : osCurrent.failed ? 'error' : 'ready'
   const osCache = useRef(new Map<string, Promise<GameSong>>())
   useEffect(() => { osCache.current.clear() }, [osBaseUrl])
+  // fetched OpenSongs songs, keyed by library + entry id, so the selection reflects them once loaded
+  const [osLoaded, setOsLoaded] = useState<ReadonlyMap<string, GameSong>>(() => new Map())
+  const osSong = useCallback((e: OpenSongEntry | undefined) => (e ? osLoaded.get(`${osKey}\u0001${e.id}`) : undefined), [osLoaded, osKey])
 
   // roller = bundled/imported songs, then OpenSongs entries; `index` addresses this combined list
   const [filter, setFilter] = useState<DifficultyFilter>('all')
@@ -248,8 +251,8 @@ export default function PianoInvaders(props: PianoInvadersProps) {
   const [pickError, setPickError] = useState<string | null>(null)
   const all = useMemo(() => [
     ...songs.map((s, i): RollerItem & { all: number } => ({ all: i, key: `s${i}-${s.id}`, title: s.title, difficulty: s.difficulty, hasAccomp: s.accompaniment.length > 0 })),
-    ...entries.map((e, i): RollerItem & { all: number } => ({ all: songs.length + i, key: `o-${e.id}`, title: e.title, difficulty: e.difficulty, hasAccomp: false })),
-  ], [songs, entries])
+    ...entries.map((e, i): RollerItem & { all: number } => ({ all: songs.length + i, key: `o-${e.id}`, title: e.title, difficulty: e.difficulty, hasAccomp: (osSong(e)?.accompaniment.length ?? 0) > 0 })),
+  ], [songs, entries, osSong])
   const visible = useMemo(() => (filter === 'all' ? all : all.filter(r => r.difficulty === filter)), [all, filter])
   const visIndex = Math.max(0, visible.findIndex(r => r.all === index))
   const selected = visible[visIndex]
@@ -265,7 +268,8 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     if (!first.some(r => r.all === index) && first[0]) setIndex(first[0].all)
   }, [all, index])
 
-  const song: GameSong | undefined = songs[index]
+  // one source of truth: the song behind the visible roller selection (what START plays)
+  const song: GameSong | undefined = selAll < 0 ? undefined : selAll < songs.length ? songs[selAll] : osSong(entries[selAll - songs.length])
   // null = not known yet (e.g. an OpenSongs entry that has not been fetched): shown as '—', never 0
   const baseBpm: number | null = song ? (mode === 'single' && props.bpm ? props.bpm : song.bpm) : null
 
@@ -408,6 +412,8 @@ export default function PianoInvaders(props: PianoInvadersProps) {
       }
       try {
         s = await withTimeout(pending, SONG_LOAD_TIMEOUT_MS, `"${entry.title}"`)
+        const loaded = s
+        setOsLoaded(m => new Map(m).set(`${osKey}\u0001${entry.id}`, loaded))
       } catch (e) {
         osCache.current.delete(entry.id)
         report(codeOf(e, 'score-load'), msgOf(e), e)
@@ -443,7 +449,7 @@ export default function PianoInvaders(props: PianoInvadersProps) {
     setScreen('playing')
     setBusy(null)
     rootRef.current?.focus()
-  }, [songs, entries, busy, engine, voice, mode, measure, game, registry, report])
+  }, [songs, entries, osKey, busy, engine, voice, mode, measure, game, registry, report])
 
   const press = useCallback((midi: number) => {
     setActive(a => new Set(a).add(midi))

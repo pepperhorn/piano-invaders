@@ -54,8 +54,8 @@ function generate(seed: number, cols: number, rows: number): boolean[][] {
 }
 
 export class LandStrip {
-  readonly cellSize: number
-  readonly height: number
+  private _cellSize: number
+  private _height: number
   readonly seed: number
   private width: number
   private rows: number
@@ -66,9 +66,9 @@ export class LandStrip {
 
   constructor(width: number, height: number = LAND_HEIGHT, seed?: number) {
     this.width = width
-    this.height = height
+    this._height = height
     this.rows = LAND_ROWS
-    this.cellSize = Math.max(1, Math.round(height / LAND_ROWS))
+    this._cellSize = Math.max(1, Math.round(height / LAND_ROWS))
     this.seed = seed ?? Math.floor(Math.random() * 0x7fffffff)
     this.build()
   }
@@ -84,8 +84,14 @@ export class LandStrip {
     this.holes = holes
   }
 
-  resize(width: number): void {
-    if (width === this.width) return
+  get cellSize(): number { return this._cellSize }
+  get height(): number { return this._height }
+
+  /** Resize to `width` (and optionally a new strip height). Craters are kept per cell, like the skyline. */
+  resize(width: number, height: number = this._height): void {
+    if (width === this.width && height === this._height) return
+    this._height = height
+    this._cellSize = Math.max(1, Math.round(height / LAND_ROWS))
     this.width = width
     this.build()
   }

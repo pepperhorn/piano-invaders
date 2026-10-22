@@ -52,6 +52,8 @@ export class AudioEngine {
   private metro: Metronome | null = null;
   private reported = new Set<string>();
   private unavailable = false;
+  /** bumped by every load()/dispose(): a load that finishes after a newer one started is stale */
+  private gen = 0;
 
   constructor(ctx?: AudioContext) { this.injected = ctx; }
 
@@ -101,6 +103,7 @@ export class AudioEngine {
 
   async load(song: GameSong, playerVoice: 'piano' | 'synth'): Promise<void> {
     this.playerVoice = playerVoice;
+    const gen = ++this.gen;
     const ctx = this.context();
     const master = this.master;
     if (!ctx || !master) return;
@@ -116,6 +119,7 @@ export class AudioEngine {
     // voice shares the player piano. Per-voice volume is applied as a velocity scale.
     const used = new Set(song.accompaniment.map((n) => n.voice));
     const jobs = new Map<string, Promise<Playable | null>>();
+    const own: InstSlot[] = [];
     const voiceJobs = Object.entries(song.voices)
       .filter(([id]) => used.has(id))
       .map(async ([id, v]) => {
@@ -132,6 +136,7 @@ export class AudioEngine {
             gain.connect(master);
             const slot: InstSlot = { inst: null, gain };
             this.insts.set(key, slot);
+            own.push(slot);
             job = this.build(`voice "${id}" (${v.instrument})`, () =>
               choice.kind === 'drum'
                 ? (DrumMachine(ctx, { instrument: choice.instrument, destination: gain }) as unknown as Playable)
@@ -141,10 +146,20 @@ export class AudioEngine {
           jobs.set(key, job);
         }
         const inst = await job;
+        if (gen !== this.gen) return;
         this.voices.set(id, { inst, percussion: !!v.percussion, volume: clamp01(v.volume) });
       });
 
     const [piano] = await Promise.all([pianoP, Promise.all(voiceJobs), this.metro.load()]);
+    if (gen !== this.gen) {
+      // superseded (e.g. abandoned after the start timeout): drop what this load built
+      for (const slot of own) {
+        try { slot.inst?.stop(); } catch { /* already stopped */ }
+        slot.gain?.disconnect();
+      }
+      if (piano && piano !== this.piano) { try { piano.stop(); } catch { /* already stopped */ } }
+      return;
+    }
     this.piano = piano;
   }
 
@@ -202,6 +217,7 @@ export class AudioEngine {
   }
 
   dispose(): void {
+    this.gen++;
     this.stopAll();
     this.teardownVoices();
     this.master?.disconnect();

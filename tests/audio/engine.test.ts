@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const made: Array<{ kind: string; opts: unknown; ready: Promise<void>; start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }> = [];
 let failInstrument: string | null = null;
+let deferInstrument: string | null = null;
+let releaseDeferred: (() => void) | null = null;
 
 vi.mock('smplr', () => {
   const factory = (kind: string) =>
@@ -9,7 +11,9 @@ vi.mock('smplr', () => {
       const failing = failInstrument !== null && (opts?.instrument === failInstrument || kind === failInstrument);
       const inst = {
         kind, opts, start: vi.fn(() => () => {}), stop: vi.fn(),
-        ready: failing ? Promise.reject(new Error('boom')) : Promise.resolve(),
+        ready: failing ? Promise.reject(new Error('boom'))
+          : deferInstrument !== null && opts?.instrument === deferInstrument ? new Promise<void>((r) => { releaseDeferred = r; })
+          : Promise.resolve(),
       };
       inst.ready.catch(() => {});
       made.push(inst);
@@ -47,7 +51,7 @@ const song = (): GameSong => ({
   },
 });
 
-beforeEach(() => { made.length = 0; failInstrument = null; vi.clearAllMocks(); });
+beforeEach(() => { made.length = 0; failInstrument = null; deferInstrument = null; releaseDeferred = null; vi.clearAllMocks(); });
 
 describe('AudioEngine', () => {
   it('no AudioContext is constructed at import', async () => {
@@ -172,6 +176,32 @@ describe('AudioEngine', () => {
     oldSf.forEach((m) => expect(m.stop).toHaveBeenCalled());
     const ids = [...(e as unknown as { voices: Map<string, unknown> }).voices.keys()];
     expect(ids).toEqual(['z']);
+  });
+
+  it('a load abandoned for a newer one stops its late instruments and leaves the new voices alone', async () => {
+    deferInstrument = 'violin';
+    const { AudioEngine } = await import('../../src/audio/AudioEngine');
+    const ctx = fakeCtx();
+    const e = new AudioEngine(ctx);
+    const stale = e.load(song(), 'piano'); // voice 'a' (violin) hangs, like a load past the start timeout
+    await Promise.resolve();
+    const violin = made.find((m) => (m.opts as { instrument?: string })?.instrument === 'violin')!;
+    const violinGain = (ctx.createGain as ReturnType<typeof vi.fn>).mock.results.at(-1)!.value as { disconnect: ReturnType<typeof vi.fn> };
+    const s2 = song();
+    s2.voices = { z: { instrument: 'acoustic_bass', volume: 1 } };
+    s2.accompaniment = [{ beat: 0, midi: 40, durBeats: 1, velocity: 90, voice: 'z' }];
+    await e.load(s2, 'piano');
+    releaseDeferred!();
+    await stale;
+    const voices = (e as unknown as { voices: Map<string, unknown> }).voices;
+    expect([...voices.keys()]).toEqual(['z']);
+    expect(violin.stop).toHaveBeenCalled();
+    expect(violinGain.disconnect).toHaveBeenCalled();
+    e.scheduleAccomp(song().accompaniment[0], 1, 0.5);
+    expect(violin.start).not.toHaveBeenCalled();
+    e.stopAll();
+    const insts = (e as unknown as { insts: Map<string, unknown> }).insts;
+    expect([...insts.keys()]).toEqual(['soundfont:acoustic_bass']);
   });
 
   it('missing AudioContext reports audio unavailable once and never throws', async () => {

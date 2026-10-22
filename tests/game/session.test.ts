@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { GameSession, PX_PER_BEAT, beatInBar, type Clock, type GameAudio, type GameSettings } from '../../src/game/useGame'
 import { LandStrip } from '../../src/render/LandStrip'
+import { stageMetrics } from '../../src/render/drawFrame'
 import type { GameSong, Target } from '../../src/song/types'
 
 function fakeClock() {
@@ -147,6 +148,44 @@ describe('GameSession', () => {
     const st = s.stats(false)
     expect(st.total).toBe(0)
     expect(st.maxCombo).toBe(0)
+  })
+
+  it('timing is rated against the note\'s own beat: a perfectly timed off-beat hit does not lower accuracy', () => {
+    const { s, toBeat } = session([{ id: 0, beat: 2.5, midi: 50, durBeats: 0.5 }])
+    toBeat(2.4)
+    s.accuracy = 50
+    toBeat(2.5)
+    expect(s.press(50)).toHaveLength(1)
+    expect(s.accuracy).toBe(52)
+    toBeat(3.2) // the beat containing the note was hit: no decay
+    expect(s.accuracy).toBe(52)
+  })
+
+  it('a late off-beat hit still lowers accuracy', () => {
+    const { s, toBeat } = session([{ id: 0, beat: 2.5, midi: 50, durBeats: 0.5 }])
+    toBeat(2.4)
+    s.accuracy = 50
+    toBeat(2.95)
+    expect(s.press(50)).toHaveLength(1)
+    expect(s.accuracy).toBe(46)
+  })
+
+  it('resize rebuilds the land at the new stage height and keeps its craters', () => {
+    const c = fakeClock()
+    const s = new GameSession({
+      song: song([]), bpm: 60, clock: c.clock, audio: audio(), settings: settings(), keyX, width: 640, height: 600, random: () => 0.5,
+    })
+    const seed = s.land.seed
+    expect(s.land.height).toBe(stageMetrics(640, 600).landHeight)
+    s.land.bomb(320, 40)
+    s.resize(1280, 1200)
+    const m = stageMetrics(1280, 1200)
+    expect(s.land.height).toBe(m.landHeight)
+    expect(s.land.cellSize).toBe(Math.round(m.landHeight / 8))
+    expect(s.land.activeCount()).toBeLessThan(new LandStrip(1280, m.landHeight, seed).activeCount())
+    // the crater stays on the same cells (x 320 of 640 -> 640 of 1280)
+    const fresh = new LandStrip(1280, m.landHeight, seed)
+    expect(s.land.impactPoint(640).y).toBeGreaterThan(fresh.impactPoint(640).y)
   })
 
   it('beatInBar honours time-signature changes', () => {

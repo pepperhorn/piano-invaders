@@ -6,12 +6,19 @@ export interface ScopedKeyHandlers {
   onKeyUp?(e: KeyboardEvent): void
 }
 
+/** <input> types that take typed text; range / checkbox / radio / button etc. leave keys to the game. */
+const TEXT_INPUT_TYPES = new Set(['text', 'search', 'email', 'url', 'tel', 'password', 'number'])
+
 /** True when the event comes from a text-entry element, whose keystrokes belong to the user, not the game. */
 export function isTypingTarget(t: EventTarget | null): boolean {
   if (!t || typeof (t as Element).tagName !== 'string') return false
   const el = t as HTMLElement
   const tag = el.tagName.toLowerCase()
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true
+  if (tag === 'input') {
+    const type = (el.getAttribute('type') ?? 'text').trim().toLowerCase() || 'text'
+    return TEXT_INPUT_TYPES.has(type)
+  }
+  if (tag === 'textarea' || tag === 'select') return true
   if (el.isContentEditable) return true
   const ce = el.getAttribute?.('contenteditable')
   return ce !== null && ce !== undefined && ce !== 'false'

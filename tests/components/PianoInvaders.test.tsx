@@ -291,6 +291,42 @@ describe('PianoInvaders', () => {
       expect(container.querySelectorAll('.pi-key.is-active')).toHaveLength(1)
     })
 
+    it('a loaded OpenSongs entry drives BPM and the ACC controls (during play and back on the start screen)', async () => {
+      const xml = fs.readFileSync(fx('grand-staff-plus-violin.musicxml'), 'utf8')
+      vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+        new Response(url.endsWith('index.json') ? JSON.stringify(index) : xml, { status: 200 })))
+      const { container } = render(<PianoInvaders songs={[legacy]} />)
+      await waitFor(() => expect(titles(container)).toHaveLength(5))
+      act(() => (container.querySelectorAll('.pi-barrel-item.is-song')[1] as HTMLElement).click())
+      await waitFor(() => expect(startBtn(container).disabled).toBe(false))
+      act(() => startBtn(container).click())
+      await waitFor(() => expect(container.querySelector('.pi-btn-quit')).toBeTruthy(), { timeout: 3000 })
+      expect(container.querySelector('.pi-chip-accomp')).toBeTruthy()
+      act(() => (container.querySelector('.pi-btn-quit') as HTMLElement).click())
+      await waitFor(() => expect(container.querySelector('.pi-btn-skip, .pi-btn-play-again')).toBeTruthy())
+      act(() => (container.querySelector('.pi-btn-skip, .pi-btn-play-again') as HTMLElement).click())
+      await waitFor(() => expect(selectedTitle(container)).toBe('Hot Cross Buns'))
+      expect(container.querySelector('.pi-hud-bpm .pi-hud-value')?.textContent).toBe('100')
+      expect(container.querySelector('.pi-barrel-bpm')?.textContent).toBe('100 BPM')
+      expect(container.querySelector('.pi-btn-toggle-accomp')).toBeTruthy()
+      expect(container.querySelector('.pi-chip-accomp')).toBeTruthy()
+    })
+
+    it('a songs-prop reload under a difficulty filter keeps BPM/ACC in step with the visible selection', async () => {
+      const easy = { name: 'Easy Tune', bpm: 70, melody: ['C3', 'D3'], difficulty: 'easy' }
+      const hard = { name: 'Hard Tune', bpm: 120, melody: ['E3', 'F3'], difficulty: 'advanced' }
+      const { container, rerender } = render(<PianoInvaders songs={[easy, hard]} opensongs={false} />)
+      await waitFor(() => expect(titles(container)).toEqual(['Easy Tune', 'Hard Tune']))
+      act(() => (container.querySelector('.pi-filter-advanced') as HTMLElement).click())
+      expect(titles(container)).toEqual(['Hard Tune'])
+      expect(container.querySelector('.pi-hud-bpm .pi-hud-value')?.textContent).toBe('120')
+      rerender(<PianoInvaders songs={[{ ...easy, name: 'Easy Two', bpm: 75 }, hard]} opensongs={false} />)
+      await act(async () => { await new Promise(r => setTimeout(r, 30)) }) // let the reload land
+      expect(selectedTitle(container)).toBe('Hard Tune')
+      expect(container.querySelector('.pi-hud-bpm .pi-hud-value')?.textContent).toBe('120')
+      expect(container.querySelector('.pi-barrel-bpm')?.textContent).toBe('120 BPM')
+    })
+
     it('HUD and roller show — instead of BPM 0 for an unloaded OpenSongs entry', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(index), { status: 200 })))
       const { container } = render(<PianoInvaders songs={[legacy]} />)

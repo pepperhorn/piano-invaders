@@ -45,6 +45,8 @@ const BARREL_H = 130
 const offsetFor = (i: number) => -(i + 1) * ITEM_H + (BARREL_H - ITEM_H) / 2
 /** rows rendered either side of the selected one (the barrel shows ~3 at a time) */
 const WINDOW = 6
+/** px of travel before a press on the barrel becomes a drag (and captures the pointer) */
+const DRAG_PX = 4
 
 export const IMPORT_ACCEPT = '.musicxml,.xml,.mxl,.mid,.midi,.dottl,.json'
 
@@ -77,8 +79,8 @@ export default function StartScreen(p: StartScreenProps) {
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (len === 0) return
+    // no pointer capture yet: capturing here would retarget the click away from the row under the pointer
     drag.current = { active: true, moved: false, startY: e.clientY, lastY: e.clientY, lastT: e.timeStamp, v: 0, startIndex: p.index, id: e.pointerId }
-    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* not supported */ }
     setDragging(true)
   }
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -89,7 +91,11 @@ export default function StartScreen(p: StartScreenProps) {
     d.lastY = e.clientY
     d.lastT = e.timeStamp
     const dy = e.clientY - d.startY
-    if (Math.abs(dy) > 4) d.moved = true
+    if (!d.moved) {
+      if (Math.abs(dy) <= DRAG_PX) return
+      d.moved = true
+      try { e.currentTarget.setPointerCapture(d.id) } catch { /* not supported */ }
+    }
     const el = scrollRef.current
     if (el) {
       el.style.transition = 'none'
@@ -102,6 +108,9 @@ export default function StartScreen(p: StartScreenProps) {
     const d = drag.current
     if (!d.active) return
     d.active = false
+    setDragging(false)
+    // a press without a drag is a click: the row's onClick selects it
+    if (!d.moved) return
     try { e.currentTarget.releasePointerCapture(d.id) } catch { /* ignore */ }
     const total = e.clientY - d.startY + d.v * 50
     const i = wrap(Math.round(d.startIndex - total / ITEM_H))
@@ -111,7 +120,6 @@ export default function StartScreen(p: StartScreenProps) {
       el.style.transform = `translateY(${offsetFor(i)}px)`
     }
     p.onIndex(i)
-    setDragging(false)
   }
 
   const toggle = (k: ToggleKey, label: string) => (
