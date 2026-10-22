@@ -25,6 +25,27 @@ function parseBytes(buf: ArrayBuffer, name: string): ScoreDocument {
   return parseScoreFile(buf, name, SETTING);
 }
 
+const decodeEntities = (t: string) =>
+  t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+
+/** <work-title> (or <movement-title>) of a MusicXML text, if present. ivories does not read it. */
+export function musicXmlTitle(xml: string): string | undefined {
+  const m = /<work-title>([^<]*)<\/work-title>/.exec(xml) ?? /<movement-title>([^<]*)<\/movement-title>/.exec(xml);
+  const t = m ? decodeEntities(m[1]).trim() : '';
+  return t || undefined;
+}
+
+function bytesTitle(buf: ArrayBuffer): string | undefined {
+  const head = new Uint8Array(buf, 0, Math.min(buf.byteLength, 8192));
+  if (head[0] === 0x50 && head[1] === 0x4b) return undefined; // MXL zip
+  if (head[0] === 0x4d && head[1] === 0x54) return undefined; // MIDI
+  try {
+    return musicXmlTitle(new TextDecoder().decode(head));
+  } catch {
+    return undefined;
+  }
+}
+
 function nameFromUrl(url: string): string {
   const last = url.split(/[?#]/)[0].split('/').pop() ?? '';
   return last.replace(/\.[^.]+$/, '') || 'Untitled';
@@ -38,7 +59,8 @@ export async function loadSong(src: ScoreSource, opts: LoadSongOpts = {}): Promi
     return parse(() => dottlToGameSong(src.dottl, sopts));
   }
   if ('musicXml' in src) {
-    return parse(() => scoreToGameSong(parseMusicXml(src.musicXml, opts.title ?? 'Untitled', SETTING), sopts));
+    const title = opts.title ?? musicXmlTitle(src.musicXml) ?? 'Untitled';
+    return parse(() => scoreToGameSong(parseMusicXml(src.musicXml, title, SETTING), { ...sopts, title }));
   }
   if ('midi' in src) {
     return parse(() => scoreToGameSong(parseMidi(src.midi, opts.title ?? 'Untitled', SETTING), sopts));
@@ -67,7 +89,8 @@ export async function loadSong(src: ScoreSource, opts: LoadSongOpts = {}): Promi
       throw new SongError('score-load', `Could not read the score file: ${msg}`, { cause });
     }
   }
-  return parse(() => scoreToGameSong(parseBytes(buf, opts.title ?? name), { ...sopts, title: opts.title ?? name }));
+  const title = opts.title ?? bytesTitle(buf) ?? name;
+  return parse(() => scoreToGameSong(parseBytes(buf, title), { ...sopts, title }));
 }
 
 async function readBlob(b: Blob): Promise<ArrayBuffer> {

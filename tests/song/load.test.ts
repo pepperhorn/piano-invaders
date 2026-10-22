@@ -67,3 +67,13 @@ describe('loadSong dottl', () => {
     vi.doUnmock('../../src/song/dottl');
   });
 });
+
+describe('loadSong titles', () => {
+  it('uses <work-title> when no title option is given', async () => {
+    const xml = fs.readFileSync(fx('leadsheet-then-piano.musicxml'), 'utf8')
+      .replace(/<score-partwise([^>]*)>/, '<score-partwise$1><work><work-title>Lead &amp; Tune</work-title></work>');
+    expect((await loadSong({ musicXml: xml })).title).toBe('Lead & Tune');
+    expect((await loadSong({ musicXml: xml }, { title: 'Override' })).title).toBe('Override');
+    expect((await loadSong({ file: new Blob([xml]), name: 'x.musicxml' })).title).toBe('Lead & Tune');
+  });
+});

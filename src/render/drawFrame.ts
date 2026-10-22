@@ -188,7 +188,9 @@ function crt(ctx: CanvasRenderingContext2D, W: number, H: number, scanlines: boo
   ctx.fillStyle = '#000'
   ctx.beginPath()
   ctx.rect(0, 0, W, H)
-  ctx.roundRect(1, 1, W - 2, H - 2, 10)
+  // old Safari (< 16) has no roundRect: fall back to a square bezel instead of throwing in the frame loop
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(1, 1, W - 2, H - 2, 10)
+  else ctx.rect(1, 1, W - 2, H - 2)
   ctx.fill('evenodd')
 }
 

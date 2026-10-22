@@ -175,3 +175,11 @@ describe('stepEffects', () => {
     expect(b).toHaveLength(0)
   })
 })
+
+describe('drawFrame without CanvasRenderingContext2D.roundRect (old Safari)', () => {
+  it('falls back to rect instead of throwing', () => {
+    const ctx = makeCtx()
+    Object.defineProperty(ctx, 'roundRect', { value: undefined, configurable: true })
+    expect(() => drawFrame(ctx, frame())).not.toThrow()
+  })
+})
