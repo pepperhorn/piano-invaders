@@ -1,6 +1,6 @@
 {
   "name": "piano-invaders",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A retro-styled rhythm game that combines Space Invaders gameplay with piano-based music mechanics. Shoot falling musical notes by pressing the correct piano keys at the right time!",
   "type": "module",
   "scripts": {
