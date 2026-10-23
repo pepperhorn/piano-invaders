@@ -1,5 +1,6 @@
 import { SongError } from './errors';
 import { loadSong } from './load';
+import { padCountIn } from './pad';
 import { difficultyFromCrf } from './pitch';
 import type { Difficulty, GameSong } from './types';
 
@@ -60,6 +61,8 @@ export async function loadOpenSongsIndex(
   return out.sort((a, b) => a.level - b.level || a.title.localeCompare(b.title));
 }
 
-export function loadOpenSong(entry: OpenSongEntry, opts: { fetchImpl?: typeof fetch } = {}): Promise<GameSong> {
-  return loadSong({ scoreUrl: entry.musicxmlUrl }, { title: entry.title, difficulty: entry.level, fetchImpl: opts.fetchImpl });
+/** OpenSongs scores start on beat 1, so they get a two-bar count-in rest at the top. */
+export async function loadOpenSong(entry: OpenSongEntry, opts: { fetchImpl?: typeof fetch } = {}): Promise<GameSong> {
+  const song = await loadSong({ scoreUrl: entry.musicxmlUrl }, { title: entry.title, difficulty: entry.level, fetchImpl: opts.fetchImpl });
+  return padCountIn(song);
 }

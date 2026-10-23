@@ -54,4 +54,14 @@ describe('OpenSongs index', () => {
     expect(song.difficulty).toBe('easy')
     expect(song.targets.length).toBeGreaterThan(0)
   })
+
+  it('loadOpenSong gives a beat-1 song a two-bar count-in rest', async () => {
+    const xml = fs.readFileSync(fx('leadsheet-then-piano.musicxml'), 'utf8')
+    const f = vi.fn(async () => new Response(xml, { status: 200 })) as unknown as typeof fetch
+    const [entry] = await loadOpenSongsIndex({ fetchImpl: okJson(index) })
+    const song = await loadOpenSong(entry, { fetchImpl: f })
+    const bpb = song.beatsPerBar
+    expect(song.countInBeats).toBe(2 * bpb)
+    expect(Math.min(...song.targets.map(t => t.beat))).toBeGreaterThanOrEqual(2 * bpb)
+  })
 })

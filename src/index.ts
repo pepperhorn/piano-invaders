@@ -10,6 +10,7 @@ export type { LeaderboardEntry, LeaderboardAdapter } from './utils/leaderboard'
 export type { PianoInvadersPlugin, PluginTheme } from './plugins/PluginRegistry'
 
 export { loadSong } from './song/load'
+export { padCountIn } from './song/pad'
 export { loadOpenSongsIndex, loadOpenSong, OPENSONGS_BASE_URL } from './song/opensongs'
 export type { OpenSongEntry } from './song/opensongs'
 export { dottlToGameSong, gameSongToDottl, isDottl } from './song/dottl'

@@ -7,6 +7,8 @@ export interface GameSong {
   timeSigChanges?: { beat: number; beatsPerBar: number }[];
   difficulty: Difficulty; targets: Target[]; accompaniment: AccompNote[];
   voices: Record<string, VoiceInfo>; lengthBeats: number;
+  /** leading rest beats that serve as the count-in on every loop (see padCountIn) */
+  countInBeats?: number;
   source: 'musicxml' | 'midi' | 'dottl' | 'legacy';
 }
 export type ScoreSource =
