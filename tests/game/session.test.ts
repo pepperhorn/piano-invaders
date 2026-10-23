@@ -51,6 +51,26 @@ describe('GameSession', () => {
     expect(y1 - y0).toBeCloseTo((fall - 0.05) * PX_PER_BEAT, 0)
   })
 
+  it('a song with its own count-in rest leads in only the fall time and counts in over the rest every loop', () => {
+    const c = fakeClock()
+    const a = audio()
+    const s = new GameSession({
+      song: song([{ id: 0, beat: 8, midi: 50, durBeats: 1 }], { lengthBeats: 12, countInBeats: 8 }),
+      bpm: 60, clock: c.clock, audio: a, settings: settings({ metronome: false }), keyX,
+      width: 640, height: 400, land: new LandStrip(640, 32, 1), random: () => 0.5,
+    })
+    expect(s.leadInBeats).toBe(Math.ceil(s.fallBeats() + 0.5))
+    const toBeat = (b: number) => { const t = b + s.leadInBeats; while (c.get() < t - 1e-9) { c.set(Math.min(t, c.get() + 1 / 60)); s.step() } }
+    toBeat(-0.5)
+    expect(a.metronomeTick).not.toHaveBeenCalled()
+    expect(s.hud().countIn).toBeNull()
+    toBeat(7.5)
+    expect(a.metronomeTick).toHaveBeenCalledTimes(6) // bar 1 on 1 and 3, bar 2 on every beat
+    expect(s.hud().countIn).toMatchObject({ bar: 2, label: '4' })
+    toBeat(12.5) // loop 2 counts in again
+    expect(s.hud().countIn).toMatchObject({ bar: 1, label: '1' })
+  })
+
   it('count-in: leads in two bars and ticks bar 1 on 1 and 3, bar 2 on every beat', () => {
     const { s, a, toBeat } = session([{ id: 0, beat: 0, midi: 50, durBeats: 1 }], { height: 400 })
     expect(s.leadInBeats).toBe(8)

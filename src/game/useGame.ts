@@ -172,7 +172,8 @@ export class GameSession {
     this.ufoX = o.width / 2
     this.gun = { x: o.width / 2, v: 0, targetX: o.width / 2 }
     const bpb = o.song.beatsPerBar || 4
-    const countIn = o.settings().countIn ? 2 * bpb : 0
+    // a song with its own count-in rest (countInBeats) counts in over that, so it needs no extra lead-in
+    const countIn = o.settings().countIn && !o.song.countInBeats ? 2 * bpb : 0
     this.leadInBeats = Math.max(countIn, Math.ceil(this.fallBeats() + 0.5))
     this.transport = new Transport({ get currentTime() { return o.clock.now() } }, {
       bpm: o.bpm, lengthBeats: Math.max(1, o.song.lengthBeats), leadInBeats: this.leadInBeats,
@@ -201,6 +202,23 @@ export class GameSession {
   fallBeats(): number {
     const g = this.geom()
     return Math.max(0.5, (g.hitY - g.spawnY) / PX_PER_BEAT)
+  }
+
+  /**
+   * Where `beat` sits in the two-bar count-in, or null outside it. Songs with countInBeats count in
+   * over that rest at the top of every loop; other songs count in once, over the lead-in.
+   */
+  private countInAt(beat: number): { idx: number; bpb: number } | null {
+    if (!this.o.settings().countIn) return null
+    const own = this.song.countInBeats ?? 0
+    if (own > 0) {
+      if (beat < 0) return null
+      const local = beat % Math.max(1, this.song.lengthBeats)
+      return local < own ? { idx: Math.floor(local), bpb: own / 2 } : null
+    }
+    const bpb = this.song.beatsPerBar || 4
+    const idx = Math.floor(beat) + 2 * bpb
+    return beat < 0 && idx >= 0 ? { idx, bpb } : null
   }
 
   resize(width: number, height: number): void {
@@ -265,18 +283,16 @@ export class GameSession {
     const horizon = this.transport.beatAt(now + LOOKAHEAD_SEC)
     if (horizon <= this.schedTo) return
     const s = this.o.settings()
-    const bpb = this.song.beatsPerBar || 4
     const at = (b: number) => this.o.clock.toAudio(this.transport.secAt(b))
-    for (let b = Math.ceil(this.schedTo - 1e-9); b < horizon; b++) {
-      if (b < this.schedTo - 1e-9) continue
-      if (b < 0) {
-        const idx = b + 2 * bpb
-        if (!s.countIn || idx < 0) continue
-        const bar1 = idx < bpb
-        if (bar1 && idx % 2 !== 0) continue
+    // the last pass covered beats < schedTo, so start exactly there (an epsilon here re-ticks a beat)
+    for (let b = Math.ceil(this.schedTo); b < horizon; b++) {
+      const ci = this.countInAt(b)
+      if (ci) {
+        const { idx, bpb } = ci
+        if (idx < bpb && idx % 2 !== 0) continue
         const inBar = idx % bpb
         this.o.audio.metronomeTick(at(b), inBar === 0, inBar === 0 ? 0.8 : inBar * 2 === bpb ? 0.55 : 0.3)
-      } else if (s.metronome) {
+      } else if (b >= 0 && s.metronome) {
         const len = Math.max(1, this.song.lengthBeats)
         const { idx, bpb: barLen } = beatInBar(this.song, b % len)
         const vol = idx === 0 ? 0.8 : idx * 2 === barLen ? 0.55 : 0.3
@@ -473,14 +489,12 @@ export class GameSession {
   hud(): HudState {
     const beat = this.transport.beatAt(this.o.clock.now())
     let countIn: HudState['countIn'] = null
-    if (beat < 0 && this.o.settings().countIn) {
-      const bpb = this.song.beatsPerBar || 4
-      const idx = Math.floor(beat) + 2 * bpb
-      if (idx >= 0) {
-        const bar = idx < bpb ? 1 : 2
-        const label = bar === 1 ? (idx % 2 === 0 ? String(idx / 2 + 1) : '') : String(idx - bpb + 1)
-        countIn = { label, bar, idx }
-      }
+    const ci = this.countInAt(beat)
+    if (ci) {
+      const { idx, bpb } = ci
+      const bar = idx < bpb ? 1 : 2
+      const label = bar === 1 ? (idx % 2 === 0 ? String(idx / 2 + 1) : '') : String(idx - bpb + 1)
+      countIn = { label, bar, idx }
     }
     return {
       score: this.score, hp: this.hp, combo: this.combo.combo, maxCombo: this.combo.maxCombo,
