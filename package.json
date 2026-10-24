@@ -1,6 +1,6 @@
 {
   "name": "piano-invaders",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A retro-styled rhythm game that combines Space Invaders gameplay with piano-based music mechanics. Shoot falling musical notes by pressing the correct piano keys at the right time!",
   "type": "module",
   "scripts": {
@@ -26,7 +26,7 @@
   "dependencies": {
     "@fontsource/poppins": "^5.3.0",
     "@fontsource/press-start-2p": "^5.3.0",
-    "ivories": "^0.1.0",
+    "ivories": "^0.3.0",
     "smplr": "^1.1.0"
   },
   "devDependencies": {
@@ -38,13 +38,14 @@
     "@vitejs/plugin-react": "^5.2.0",
     "jsdom": "^29.1.1",
     "oxlint": "^1.89.0",
+    "pepperscore": "^0.3.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "serve": "^14.2.6",
     "typescript": "~6.0",
     "vite": "^8.3.5",
     "vitest": "^5.0.5",
-    "vitest-canvas-mock": "^1.2.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "vitest-canvas-mock": "^1.2.0"
   },
   "sideEffects": [
     "*.css"
@@ -68,6 +69,7 @@
     }
   },
   "peerDependencies": {
+    "pepperscore": "^0.3.0",
     "react": ">=19",
     "react-dom": ">=19"
   }
